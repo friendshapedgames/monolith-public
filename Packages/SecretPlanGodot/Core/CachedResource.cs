@@ -15,7 +15,7 @@ public class CachedResource<T> where T : Resource
 
     public bool IsValid()
     {
-        return SecretResourceLoader.Exists(Path);
+        return SecretResourceLoader.ExistsInAnyContext(Path);
     }
 
     public T? GetOrLoadOrNull()

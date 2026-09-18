@@ -8,6 +8,9 @@ namespace SecretPlanGodot.Core;
 
 public static class GodotUtilities
 {
+    /// <summary>
+    /// Cached list of the names of all resources
+    /// </summary>
     private static string[]? _cachedResourceList;
 
     public static RealFileSystem EditorProjectRoot => new(ProjectSettings.GlobalizePath("res://"));
@@ -20,7 +23,7 @@ public static class GodotUtilities
     public static void InvalidateResourceCache()
     {
         _cachedResourceList = null;
-        SecretResourceLoader.InvalidateModCache();
+        SecretResourceLoader.InvalidateCache();
     }
 
 
@@ -59,9 +62,10 @@ public static class GodotUtilities
             yield return resPath;
         }
 
-        if (LocalClient.IsModdingEnabled)
+        foreach (var modFolder in SecretResourceLoader.GetAllModFoldersGlobalized())
         {
-            foreach (var filePath in CommonSerializationConstants.AppDataFiles.GetDirectory("Mods").GetFilesAt("."))
+            var modFiles = new RealFileSystem(modFolder);
+            foreach (var filePath in modFiles.GetFilesAt("."))
             {
                 yield return $"mods://{filePath}";
             }

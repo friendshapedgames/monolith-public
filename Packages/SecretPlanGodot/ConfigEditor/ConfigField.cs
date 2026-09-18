@@ -20,6 +20,7 @@ public class ConfigField
         bool isArray,
         string humanReadableName,
         string? memberName,
+        bool isReadonly,
         Action<object> setValue,
         Func<object?> getValue
     )
@@ -32,7 +33,10 @@ public class ConfigField
         _setValue = setValue;
         _getValue = getValue;
         RealMemberName = memberName;
+        IsReadonly = isReadonly;
     }
+
+    public bool IsReadonly { get; }
 
     /// <summary>
     ///     Name of the actual member of this field, should only be compared with a `nameof()`
@@ -123,6 +127,7 @@ public class ConfigField
             AssociatedType.IsArray,
             $"Element [{index}] of {HumanReadableName}",
             null,
+            IsReadonly,
             value =>
             {
                 var parentValue = GetValue();
@@ -141,7 +146,7 @@ public class ConfigField
                             }
                             else
                             {
-                                newArray.SetValue(Activator.CreateInstance(elementType)!, i);
+                                newArray.SetValue(CreateEmpty(elementType), i);
                             }
                         }
 
@@ -163,7 +168,7 @@ public class ConfigField
                 {
                     if (!array.IsValidIndex(index))
                     {
-                        return Activator.CreateInstance(elementType)!;
+                        return CreateEmpty(elementType);
                     }
 
                     return array.GetValue(index);
@@ -171,6 +176,17 @@ public class ConfigField
 
                 return null;
             });
+    }
+
+    private object CreateEmpty(Type elementType)
+    {
+        if (elementType == typeof(string))
+        {
+            // special case for strings in particular
+            return string.Empty;
+        }
+
+        return Activator.CreateInstance(elementType)!;
     }
 
     public IEnumerable<ConfigField> GetSubfields()
@@ -244,6 +260,7 @@ public class ConfigField
         return new ConfigField(new ConfigFieldChangeNotifier(() => { }), null, typeof(void), false,
             ConfigEditorConstants.EmptyFieldText,
             null,
+            false,
             _ => { LocalClient.Error("Writing to an empty ConfigField, this is probably not what you want"); },
             () =>
             {
@@ -273,6 +290,8 @@ public class ConfigField
                 continue;
             }
 
+            var isReadonly = member.GetCustomAttribute<ReadonlyConfigField>() != null;
+
             if (member is PropertyInfo propertyInfo)
             {
                 configField = new ConfigField(
@@ -282,6 +301,7 @@ public class ConfigField
                     propertyInfo.PropertyType.IsArray,
                     visibleName,
                     member.Name,
+                    isReadonly,
                     value =>
                     {
                         if (propertyInfo.CanWrite)
@@ -302,6 +322,7 @@ public class ConfigField
                     fieldInfo.FieldType.IsArray,
                     visibleName,
                     member.Name,
+                    isReadonly,
                     value => fieldInfo.SetValue(instance, value),
                     () => fieldInfo.GetValue(instance)
                 );
