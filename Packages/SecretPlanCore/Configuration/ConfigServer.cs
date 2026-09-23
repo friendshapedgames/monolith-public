@@ -379,7 +379,7 @@ public class ConfigServer
 
     public void WriteAllConfigsTxt(IFileSystem files)
     {
-        var instanceNames = GetAllInstances().Where(a => a.SourceFileSystem == null).Select(a => a.InstanceInfo.Name)
+        var instanceNames = GetAllInstances().Where(a => a.Origin.IsBaseGameConfig()).Select(a => a.InstanceInfo.Name)
             .ToList();
         instanceNames.Sort();
         
@@ -576,7 +576,7 @@ public class ConfigServer
     {
         foreach (var config in GetAllInstances())
         {
-            var fileSystem = config.SourceFileSystem ?? gameDirectoryFiles;
+            var fileSystem = config.Origin.SourceFileSystem ?? gameDirectoryFiles;
             WriteConfig(fileSystem, config);
         }
     }

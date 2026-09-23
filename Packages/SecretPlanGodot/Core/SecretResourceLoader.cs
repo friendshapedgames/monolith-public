@@ -36,11 +36,16 @@ public static class SecretResourceLoader
     public const string UserModsFolder = "user://Mods/";
     private static readonly Dictionary<string, Resource> _cache = new();
 
-    private static readonly List<ModRedirect> _modRedirects = [ModRedirect.Create(UserModsFolder)];
+    private static readonly List<ModRedirect> _modRedirects = [ModRedirect.FromPath(UserModsFolder)];
 
     public static IEnumerable<string> GetAllModFoldersGlobalized()
     {
-        return _modRedirects.Select(redirect => GlobalizePath(redirect.PrefixPath, redirect.PathType));
+        return _modRedirects.Select(redirect => redirect.GlobalizedPath());
+    }
+
+    public static IEnumerable<ModRedirect> GetAllModRedirects()
+    {
+        return _modRedirects;
     }
 
     public static void InvalidateCache()
@@ -61,14 +66,19 @@ public static class SecretResourceLoader
         }
     }
 
+    public static void ClearModRedirects()
+    {
+        _modRedirects.Clear();
+    }
+
     public static void AddModRedirect(string path)
     {
-        _modRedirects.Add(ModRedirect.Create(path));
+        _modRedirects.Add(ModRedirect.FromPath(path));
     }
 
     public static void RemoveModRedirect(string path)
     {
-        _modRedirects.Remove(ModRedirect.Create(path));
+        _modRedirects.Remove(ModRedirect.FromPath(path));
     }
 
     public static Resource? LoadTypeless(string path)
@@ -335,14 +345,14 @@ public static class SecretResourceLoader
     /// <summary>
     ///     Represents a PrefixPath that will replace mods://
     /// </summary>
-    private readonly record struct ModRedirect(string PrefixPath, ResourcePathType PathType)
+    public readonly record struct ModRedirect(string PrefixPath, ResourcePathType PathType)
     {
         public ResourcePath ConvertedPath(string pathWithModPrefix)
         {
             return new ResourcePath(pathWithModPrefix.Replace(ModsPrefix, PrefixPath), PathType);
         }
 
-        public static ModRedirect Create(string path)
+        public static ModRedirect FromPath(string path)
         {
             var resultPath = path;
             if (!path.EndsWith("/"))
@@ -359,9 +369,14 @@ public static class SecretResourceLoader
             
             return new ModRedirect(resultPath, pathType);
         }
+
+        public string GlobalizedPath()
+        {
+            return GlobalizePath(PrefixPath, PathType);
+        }
     }
 
-    private readonly record struct ResourcePath(string Path, ResourcePathType PathType)
+    public readonly record struct ResourcePath(string Path, ResourcePathType PathType)
     {
         public Resource? LoadOrNull()
         {

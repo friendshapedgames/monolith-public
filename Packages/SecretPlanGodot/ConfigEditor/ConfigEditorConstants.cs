@@ -27,6 +27,6 @@ public static class ConfigEditorConstants
             return name;
         }
 
-        return name + $" ({instance.InstanceInfo.TypeId})";
+        return name + $" ({instance.GetType().Name})";
     }
 }
