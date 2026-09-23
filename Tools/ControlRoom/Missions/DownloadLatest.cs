@@ -11,7 +11,7 @@ public class DownloadLatest : Mission
 
     public override async Task Run()
     {
-        var url = "git@github.com:secretplan/secretplan-public.git";
+        var url = "git@github.com:friendshapedgames/monolith-public.git";
         var sourceRepo =
             await VirtualRepo.GetAndInitialize(url, "VirtualPublicRepo");
         var destinationRepo =

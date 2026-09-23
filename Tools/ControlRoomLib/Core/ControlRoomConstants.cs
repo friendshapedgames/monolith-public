@@ -171,17 +171,17 @@ public static class ControlRoomConstants
     /// </summary>
     public static string GitHubWebUrl(string branchName)
     {
-        return $"https://github.com/secretplan/secretplan-mono/tree/{branchName}";
+        return $"https://github.com/friendshapedgames/monolith/tree/{branchName}";
     }
 
     public static string GitHubWebPatchNotesUrl(string branchName)
     {
-        return $"https://github.com/secretplan/secretplan-mono/tree/{branchName}/PATCH_NOTES.md";
+        return $"https://github.com/friendshapedgames/monolith/tree/{branchName}/PATCH_NOTES.md";
     }
 
     public static string GitHubWebCommitUrl(string sha)
     {
-        return $"https://github.com/secretplan/secretplan-mono/commit/{sha}";
+        return $"https://github.com/friendshapedgames/monolith/commit/{sha}";
     }
 
     public static async Task<bool> CheckLocalIsLatest()

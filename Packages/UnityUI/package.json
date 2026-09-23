@@ -1,10 +1,10 @@
 {
-    "name": "ca.secretplan.ui",
+    "name": "com.friendshapedgames.ui",
     "version": "0.0.1",
     "displayName": "Secret Plan UI",
     "unity": "2020.3",
     "dependencies": {
-        "ca.secretplan.core": "0.0.1",
+        "com.friendshapedgamesore": "0.0.1",
         "com.dbrizov.naughtyattributes": "2.1.4",
         "com.unity.inputsystem": "1.7.0"
     }
