@@ -1,5 +1,31 @@
 ﻿namespace SecretPlanCore.Core;
 
+
+public sealed class AllocationScope : IDisposable
+{
+    private readonly string _name;
+    private readonly long _start;
+    
+    public AllocationScope(string name)
+    {
+        _name = name;
+        _start = GC.GetAllocatedBytesForCurrentThread();
+    }
+
+    public void Dispose()
+    {
+        var allocated =
+            GC.GetAllocatedBytesForCurrentThread() - _start;
+
+        if (allocated != 0)
+        {
+            Print?.Invoke([$"{_name}: {allocated:N0} bytes"]);
+        }
+    }
+
+    public static event Action<object[]>? Print;
+}
+
 public static class PerfClamps
 {
     private static string _currentStackString = string.Empty;
