@@ -202,12 +202,6 @@ public static class SecretResourceLoader
         }
     }
 
-    [Obsolete("Use ExistsInAnyContext()")]
-    public static bool Exists(string path)
-    {
-        return ExistsInAnyContext(path);
-    }
-
     public static bool ExistsInAnyContext(string path)
     {
         var basicExists = ResourceLoader.Exists(path);
