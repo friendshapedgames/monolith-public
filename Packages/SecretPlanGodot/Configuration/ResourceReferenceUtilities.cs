@@ -24,6 +24,14 @@ public static class ResourceReferenceUtilities
                     [".wav"] = typeof(AudioStreamWav),
                     [".tscn"] = typeof(PackedScene)
                 };
+
+                foreach (var key in _underlyingExtensionToType.Keys.ToArray())
+                {
+                    var upperKey = key.ToUpperInvariant();
+                    
+                    // Allow "PNG" as well as "png" (why does windows do this)
+                    _underlyingExtensionToType[upperKey] = _underlyingExtensionToType[key];
+                }
             }
 
             return _underlyingExtensionToType;

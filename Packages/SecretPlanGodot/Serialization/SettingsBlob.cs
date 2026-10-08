@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using Newtonsoft.Json;
+using SecretPlanCore.Core;
 
 namespace SecretPlanGodot.Serialization;
 
@@ -37,6 +39,11 @@ public abstract record SettingsBlob
 
     public event Action<string>? ValueChanged;
 
+    public void SetObject(PropertyInfo? propertyInfo, object value)
+    {
+        SetValue(propertyInfo, value);
+    }
+    
     public void SetFloat(PropertyInfo? propertyInfo, float value)
     {
         SetValue(propertyInfo, value);
@@ -117,5 +124,50 @@ public abstract record SettingsBlob
     public void InvokeValueChangedForSetting(string name)
     {
         ValueChanged?.Invoke(name);
+    }
+
+    /// <summary>
+    ///     All properties on the concrete settings type that are serialized under an explicit [JsonProperty] name,
+    ///     paired with that name.
+    /// </summary>
+    private IEnumerable<(string JsonName, PropertyInfo Property)> AllJsonProperties()
+    {
+        // GetType() so we see the derived record's properties, not just SettingsBlob's
+        foreach (var property in GetType()
+                     .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            var jsonName = property.GetCustomAttribute<JsonPropertyAttribute>()?.PropertyName;
+            if (jsonName != null)
+            {
+                yield return (jsonName, property);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Exact lookup: returns the property whose [JsonProperty] name matches <paramref name="jsonName" />, or null.
+    /// </summary>
+    public PropertyInfo? GetPropertyByJsonName(string jsonName)
+    {
+        foreach (var (name, property) in AllJsonProperties())
+        {
+            if (name == jsonName)
+            {
+                return property;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Fuzzy lookup: returns the property whose [JsonProperty] name best matches <paramref name="query" />,
+    ///     or null if nothing scores above FuzzyUtilities' threshold.
+    /// </summary>
+    public PropertyInfo? SearchPropertyByJsonName(string query)
+    {
+        return FuzzyUtilities.Rank(query, AllJsonProperties(), entry => entry.JsonName, minScore: 80)
+            .Select(entry => entry.Property)
+            .FirstOrDefault();
     }
 }

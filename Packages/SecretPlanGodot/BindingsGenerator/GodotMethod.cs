@@ -6,16 +6,16 @@ using Array = Godot.Collections.Array;
 namespace SecretPlanGodot.BindingsGenerator;
 
 public readonly record struct GodotMethod(
-    string Name,
+    string RawName,
     GodotProperty[] Args,
     Array DefaultArgs,
     int Id,
     MethodFlags Flags,
     GodotProperty Return)
 {
-    public string CSharpName()
+    public string PascalCaseName()
     {
-        return string.Join("",Name.Split("_").Select(a =>
+        return string.Join("",RawName.Split("_").Select(a =>
         {
             var stringBuilder = new StringBuilder();
             for (var index = 0; index < a.Length; index++)
@@ -31,7 +31,7 @@ public readonly record struct GodotMethod(
     {
         return new GodotMethod
         {
-            Name = dictionary["name"].AsString(),
+            RawName = dictionary["name"].AsString(),
             Id = dictionary["id"].AsInt32(),
             Flags = dictionary["flags"].As<MethodFlags>(),
             Return = GodotProperty.FromDictionary(dictionary["return"].AsGodotDictionary()),
@@ -39,11 +39,6 @@ public readonly record struct GodotMethod(
                 .Select(arg => GodotProperty.FromDictionary(arg.AsGodotDictionary())).ToArray(),
             DefaultArgs = dictionary["default_args"].AsGodotArray()
         };
-    }
-
-    public string CodeGenSignature()
-    {
-        return $"{Return.BestGuessTypeString()} {CSharpName()}({CodeGenArgs(true)})";
     }
 
     /// <summary>
@@ -58,7 +53,7 @@ public readonly record struct GodotMethod(
         {
             if (isParameterList)
             {
-                argsArray.Add($"{arg.BestGuessTypeString()} {arg.Name}");
+                argsArray.Add($"{arg.BestGuessTypeString()} {arg.RawName}");
             }
             else
             {
@@ -77,7 +72,7 @@ public readonly record struct GodotMethod(
                     suffix = $".{nameof(BoundObject.UnderlyingObject)}";
                 }
 
-                argsArray.Add(cast + arg.Name + suffix);
+                argsArray.Add(cast + arg.RawName + suffix);
             }
         }
 

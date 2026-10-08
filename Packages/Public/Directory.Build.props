@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SecretPlanCoreDir>$(MSBuildThisFileDirectory)FriendShapedCore/</SecretPlanCoreDir>
+    <ExTweenDir>$(MSBuildThisFileDirectory)ExTween/</ExTweenDir>
+  </PropertyGroup>
+</Project>

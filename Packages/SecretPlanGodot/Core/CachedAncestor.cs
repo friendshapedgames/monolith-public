@@ -4,10 +4,20 @@ namespace SecretPlanGodot.Core;
 
 public class CachedAncestor<T>
 {
-    private T? _cached;
+    protected T? Cached;
+    private readonly int? _maxStepCount;
 
+    public CachedAncestor(int? maxStepCount = null)
+    {
+        _maxStepCount = maxStepCount;
+    }
+
+    /// <summary>
+    ///     NOTE: this does not consider IsValid
+    /// </summary>
+    /// <returns></returns>
     public T? GetOrNull(Node node)
     {
-        return _cached ??= node.ClimbAncestorsUntilFindType<T>();
+        return Cached ??= node.ClimbAncestorsUntilFindType<T>(_maxStepCount);
     }
 }

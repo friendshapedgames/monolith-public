@@ -1,34 +1,39 @@
-﻿using System.Text;
-using Godot;
+﻿using Godot;
 
 namespace SecretPlanGodot.BindingsGenerator;
 
 public class BoundClassGenerator
 {
     private readonly StringName _className;
+    private readonly HashSet<string> _reservedNames = new();
     private readonly GodotObject _sample;
     private readonly HashSet<string> _usedTypes = new();
+    private readonly bool _isScript;
     protected bool IsStatic;
-    private readonly HashSet<string> _reservedNames = new();
 
     public BoundClassGenerator(StringName className, GodotObject sampleObject)
     {
         _className = className;
         _sample = sampleObject;
+        _isScript = sampleObject.GetScript().AsGodotObject() is Script;
 
-        var parentClassName = ClassDB.GetParentClass(sampleObject.GetClass());
-        foreach (var methodName in ClassDB.ClassGetMethodList(parentClassName).Select(a => a["name"].AsString()))
+        // For native classes, GetClass() is the class we're binding, so reserve everything from its parent.
+        // For scripted objects (eg: a GDScript autoload), GetClass() is the native base (eg: Node), so reserve all of it.
+        StringName reservedClassName = _isScript ? sampleObject.GetClass() : ClassDB.GetParentClass(sampleObject.GetClass());
+        foreach (var methodName in ClassDB.ClassGetMethodList(reservedClassName).Select(a => a["name"].AsString()))
         {
             _reservedNames.Add(methodName);
         }
 
-        foreach (var propertyName in ClassDB.ClassGetPropertyList(parentClassName).Select(a => a["name"].AsString()))
+        foreach (var propertyName in ClassDB.ClassGetPropertyList(reservedClassName).Select(a => a["name"].AsString()))
         {
             _reservedNames.Add(propertyName);
         }
 
-        // magic string
+        // magic strings
         _reservedNames.Add("script");
+        // Object pseudo-method that isn't in ClassDB's method list but shows up in GetMethodList()
+        _reservedNames.Add("free");
 
         foreach (var method in GetMethods())
         {
@@ -59,7 +64,7 @@ public class BoundClassGenerator
         {
             var method = GodotMethod.FromDictionary(methodDictionary);
 
-            if (_reservedNames.Contains(method.Name))
+            if (IsHidden(method.RawName))
             {
                 continue;
             }
@@ -79,7 +84,7 @@ public class BoundClassGenerator
                 continue;
             }
 
-            if (_reservedNames.Contains(property.Name))
+            if (IsHidden(property.RawName))
             {
                 continue;
             }
@@ -88,72 +93,160 @@ public class BoundClassGenerator
         }
     }
 
-    public IEnumerable<string> GenerateSourceCode(DistinctQueue<string> distinctQueue)
+    private bool IsHidden(string rawName)
     {
-        var prefix = "public ";
-        var inherit = $": {nameof(BoundObject)}";
-
-        if (IsStatic)
+        if (_reservedNames.Contains(rawName))
         {
-            prefix += "static ";
-            inherit = string.Empty;
+            return true;
         }
 
-        var lines = new List<string>();
-        lines.Add($"{prefix}class {_className} {inherit}");
-        lines.Add("{");
+        // In GDScript, a leading underscore means private by convention. This also catches engine virtuals
+        // (_ready, _process, _init, etc.) which aren't in ClassDB's method list.
+        return _isScript && rawName.StartsWith('_');
+    }
+
+    private IStatement PropertyName(GodotProperty property)
+    {
+        return new GetPropertyOrFieldOnStatement(new Raw("PropertyNames"), property.PascalCaseName());
+    }
+
+    private IStatement MethodName(GodotMethod method)
+    {
+        return new GetPropertyOrFieldOnStatement(new Raw("MethodNames"), method.PascalCaseName());
+    }
+
+    public IEnumerable<IStatement> GenerateSourceCode(DistinctQueue<string> distinctQueue)
+    {
+        var parentClass = nameof(BoundObject);
+        yield return new DeclareClass(AccessLevel.Public, IsStatic, _className, IsStatic ? null : parentClass);
+        yield return new NewLine();
+        yield return new OpenScope();
+        yield return new NewLine();
 
         // default constructor
         if (!IsStatic)
         {
-            lines.Add($"{prefix}{_className}(GodotObject underlyingObject) : base(underlyingObject) {{ }}");
+            yield return new DeclareConstructor(_className, [new StatementParameter("GodotObject", "underlyingObject")],
+                ["underlyingObject"]);
+            yield return new OpenScope();
+            yield return new CloseScope();
+            yield return new NewLine();
         }
         else
         {
-            lines.Add("private static GodotObject? _instance;");
-            lines.Add(
-                "private static GodotObject Instance => _instance ??= Engine.GetSingleton(StringNameCache.FmodServer);");
+            yield return new DeclareField(
+                new Prefix(AccessLevel.Private, true),
+                new TypeAndIdentifier("GodotObject?", "_instance"));
+
+            yield return new DeclareProperty(
+                new Prefix(AccessLevel.Private, true),
+                new TypeAndIdentifier("GodotObject", "Instance"),
+                new Raw("_instance ??= Engine.GetSingleton(StringNameCache.FmodServer);"),
+                null
+            );
         }
 
-        foreach (var property in GetProperties())
+        // make MethodNames and PropertyNames classes
+
+        yield return new DeclareClass(AccessLevel.Private, true, "MethodNames");
+        yield return new OpenScope();
+        yield return new NewLine();
+        foreach (var method in GetMethods())
         {
-            var builder = new StringBuilder();
-            builder.Append(prefix);
-            builder.Append(property.BestGuessTypeString());
-            builder.Append(" ");
-            builder.Append(property.CSharpName());
-            builder.Append(" { ");
+            yield return new DeclareField(new Prefix(AccessLevel.Public, true, true),
+                new TypeAndIdentifier(nameof(StringName), method.PascalCaseName()),
+                new WrappedInQuotes(method.RawName));
+            yield return new NewLine();
+        }
+
+        yield return new CloseScope();
+        yield return new NewLine();
+
+        var properties = GetProperties().ToList();
+
+        if (properties.Count > 0)
+        {
+            yield return new DeclareClass(AccessLevel.Private, true, "PropertyNames");
+            yield return new OpenScope();
+            yield return new NewLine();
+            foreach (var property in properties)
+            {
+                yield return new DeclareField(new Prefix(AccessLevel.Public, true, true),
+                    new TypeAndIdentifier(nameof(StringName), property.PascalCaseName()),
+                    new WrappedInQuotes(property.RawName));
+                yield return new NewLine();
+            }
+
+            yield return new CloseScope();
+            yield return new NewLine();
+        }
+
+        foreach (var property in properties)
+        {
+            IStatement? getter;
+            IStatement? setter;
+
             if (IsStatic)
             {
-                builder.Append("get => ");
+                var assignGodotObjectVariable = new AssignVariable("godotObject",
+                    new CallMethodOnStatement(new Raw("Instance"), "Get", [PropertyName(property)]));
+
                 if (property.IsObject())
                 {
-                    builder.Append(
-                        $"new {property.ClassName}(Instance.Get({property.Name})).AsGodotObject());");
+                    getter = new MultiStatement([
+                        assignGodotObjectVariable,
+                        new EndStatement(),
+                        new CallMethodOnStatement(new Raw("godotObject"), nameof(Variant.AsGodotObject)),
+                        new EndStatement()
+                    ]);
                 }
                 else
                 {
-                    builder.Append(
-                        $"Instance.Get({property.Name}).As<{property.BestGuessTypeString()}>();");
+                    getter = new MultiStatement([
+                        assignGodotObjectVariable,
+                        new EndStatement(),
+                        new CallMethodOnStatement(new Raw("godotObject"), $"As<{property.BestGuessTypeString()}>"),
+                        new EndStatement()
+                    ]);
                 }
 
-                builder.Append("set => ");
-                builder.Append(
-                    $"Instance.Set({property.Name}, value); ");
+                setter = new MultiStatement([
+                    new CallMethodOnStatement(new Raw("Instance"), "Set", [
+                        PropertyName(property),
+                        new Raw("value")
+                    ]),
+                    new EndStatement()
+                ]);
             }
             else
             {
-                builder.Append("set => ");
-                builder.Append(
-                    $"{nameof(BoundObject.PropertySet)}(\"{property.Name}\" ,value); ");
-                builder.Append("get => ");
-                builder.Append(
-                    $"{nameof(BoundObject.PropertyGet)}<{property.BestGuessTypeString()}>(\"{property.Name}\");");
+                setter =
+                    new MultiStatement(
+                    [
+                        new CallLocalMethod(nameof(BoundObject.PropertySet),
+                        [
+                            PropertyName(property),
+                            new Raw("value")
+                        ]),
+                        new EndStatement()
+                    ])
+                    ;
+
+                getter =
+                    new MultiStatement([
+                            new CallLocalMethod($"{nameof(BoundObject.PropertyGet)}<{property.BestGuessTypeString()}>",
+                            [
+                                PropertyName(property)
+                            ]),
+                            new EndStatement()
+                        ]
+                    )
+                    ;
             }
 
-            builder.Append(" }");
-
-            lines.Add(builder.ToString());
+            yield return new DeclareProperty(new Prefix(AccessLevel.Public, IsStatic),
+                new TypeAndIdentifier(property.BestGuessTypeString(), property.PascalCaseName()),
+                getter, setter);
         }
 
         foreach (var method in GetMethods())
@@ -163,41 +256,47 @@ public class BoundClassGenerator
                 distinctQueue.Enqueue(typeName);
             }
 
-            var argsSuffix = string.Empty;
+            yield return new DeclareMethod(new Prefix(AccessLevel.Public, IsStatic),
+                new TypeAndIdentifier(method.Return.BestGuessTypeString(), method.PascalCaseName()),
+                method.Args.Select(arg => new TypeAndIdentifier(arg.BestGuessTypeString(), arg.SafeIdentifier())).ToArray());
 
-            if (method.Args.Length > 0)
+            yield return new OpenScope();
+
+            List<IStatement> callArgs = new();
+
+            callArgs.Add(MethodName(method));
+
+            foreach (var arg in method.Args)
             {
-                argsSuffix = $", {method.CodeGenArgs(false)}";
+                var str = arg.SafeIdentifier();
+                if (arg.IsObject())
+                {
+                    str += ".UnderlyingObject";
+                }
+
+                callArgs.Add(new Raw(str));
             }
-
-            var builder = new StringBuilder();
-
-            builder.Append(prefix);
-            builder.Append(method.CodeGenSignature());
-            builder.Append(" { ");
-
-            var callArgs = $"\"{method.Name}\"{argsSuffix}";
 
             if (IsStatic)
             {
+                var staticCall = new CallMethodOnStatement(new Raw("Instance"), "Call", callArgs.ToArray());
+
                 if (method.Return.IsVoid())
                 {
-                    builder.Append(
-                        $"Instance.Call({callArgs});");
+                    yield return staticCall;
+                    yield return new EndStatement();
                 }
                 else
                 {
-                    builder.Append("return ");
-
                     if (method.Return.IsObject())
                     {
-                        builder.Append(
-                            $"new {method.Return.ClassName}(Instance.Call({callArgs}).AsGodotObject());");
+                        yield return new ReturnValue(new ConstructObject(method.Return.BestGuessTypeString(),
+                            [new CallMethodOnStatement(staticCall, "AsGodotObject")]));
                     }
                     else
                     {
-                        builder.Append(
-                            $"Instance.Call({callArgs}).As<{method.Return.BestGuessTypeString()}>();");
+                        yield return new ReturnValue(new CallMethodOnStatement(staticCall,
+                            $"As<{method.Return.BestGuessTypeString()}>"));
                     }
                 }
             }
@@ -205,41 +304,62 @@ public class BoundClassGenerator
             {
                 if (method.Return.IsVoid())
                 {
-                    builder.Append(
-                        $"{nameof(BoundObject.CallBoundMethodVoid)}({callArgs});");
+                    yield return new CallLocalMethod(nameof(BoundObject.CallBoundMethodVoid), callArgs.ToArray());
+                    yield return new EndStatement();
                 }
                 else
                 {
-                    builder.Append("return ");
-
                     if (method.Return.IsObject())
                     {
-                        builder.Append(
-                            $"new {method.Return.ClassName}({nameof(BoundObject.CallBoundMethod)}<GodotObject>({callArgs}));");
+                        yield return new ReturnValue(new ConstructObject(
+                            method.Return.BestGuessTypeString(), [
+                                new CallLocalMethod($"{nameof(BoundObject.CallBoundMethod)}<GodotObject>",
+                                    callArgs.ToArray())
+                            ]));
                     }
                     else
                     {
-                        builder.Append(
-                            $"{nameof(BoundObject.CallBoundMethod)}<{method.Return.BestGuessTypeString()}>({callArgs});");
+                        yield return new ReturnValue(
+                            new CallLocalMethod(
+                                $"{nameof(BoundObject.CallBoundMethod)}<{method.Return.BestGuessTypeString()}>",
+                                callArgs.ToArray())
+                        );
                     }
                 }
             }
 
-            builder.Append(" } ");
-            lines.Add(builder.ToString());
+            yield return new CloseScope();
+            yield return new NewLine();
         }
 
-        foreach (var enumClassName in ClassDB.ClassGetEnumList(_className, true))
+        // Script classes aren't in ClassDB, so there are no enums/constants to find here
+        var classDbEnums = _isScript ? System.Array.Empty<string>() : ClassDB.ClassGetEnumList(_className, true);
+        var classDbConstants = _isScript ? System.Array.Empty<string>() : ClassDB.ClassGetIntegerConstantList(_className);
+
+        foreach (var enumClassName in classDbEnums)
         {
-            lines.Add($"public enum {enumClassName}");
-            lines.Add("{");
-            lines.Add(string.Join(",",
-                ClassDB.ClassGetEnumConstants(_className, enumClassName, true).Select(enumName =>
-                    enumName + " = " + ClassDB.ClassGetIntegerConstant(_className, enumName))));
-            lines.Add("}");
+            var enumNames = ClassDB.ClassGetEnumConstants(_className, enumClassName, true);
+            var enumValues = enumNames.Select(enumName =>
+                ClassDB.ClassGetIntegerConstant(_className, enumName)).ToArray();
+
+            var tuples = new Tuple<string, long>[enumNames.Length];
+            for (var i = 0; i < tuples.Length; i++)
+            {
+                tuples[i] = new Tuple<string, long>(enumNames[i], enumValues[i]);
+            }
+
+            yield return new DeclareEnumWithValues(enumClassName, tuples);
         }
 
-        lines.Add("}");
-        return lines;
+        foreach(var integerConstantName in classDbConstants)
+        {
+            var value = ClassDB.ClassGetIntegerConstant(_className, integerConstantName);
+
+            yield return new DeclareConst(new("long", integerConstantName), value.ToString());
+        }
+        
+        yield return new CloseScope();
+        yield return new NewLine();
+        
     }
 }

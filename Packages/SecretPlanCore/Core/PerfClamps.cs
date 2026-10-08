@@ -73,7 +73,7 @@ public static class PerfClamps
         return new Canary(name);
     }
 
-    public readonly record struct Item(string Name, long StartTimeMilliseconds);
+    private readonly record struct Item(string Name, long StartTimeMilliseconds);
 
     public class Canary : IDisposable
     {

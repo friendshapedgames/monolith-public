@@ -3,4 +3,10 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
+
+  <!-- Locations of shared packages. Packages/Public/Directory.Build.props defines these for the public FriendShapedLibrary layout. -->
+  <PropertyGroup>
+    <SecretPlanCoreDir>$(MSBuildThisFileDirectory)Packages/SecretPlanCore/</SecretPlanCoreDir>
+    <ExTweenDir>$(MSBuildThisFileDirectory)Packages/ExTween/</ExTweenDir>
+  </PropertyGroup>
 </Project>

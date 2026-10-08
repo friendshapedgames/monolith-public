@@ -26,8 +26,9 @@ public static class NodeExtensions
         return null;
     }
 
-    public static T? ClimbAncestorsUntilFindType<T>(this Node node)
+    public static T? ClimbAncestorsUntilFindType<T>(this Node node, int? maxStepCount = null)
     {
+        var stepCount = 0;
         var parent = node.GetParent();
         while (parent != null)
         {
@@ -36,7 +37,13 @@ public static class NodeExtensions
                 return desired;
             }
 
+            if (stepCount >= maxStepCount)
+            {
+                return default;
+            }
+            
             parent = parent.GetParent();
+            stepCount++;
         }
 
         return default;
@@ -113,7 +120,7 @@ public static class NodeExtensions
     {
         return node != null && GodotObject.IsInstanceValid(node);
     }
-    
+
     public static bool IsValidAndNotQueuedForDeletion([NotNullWhen(true)] this Node? node)
     {
         return node != null && GodotObject.IsInstanceValid(node) && !node.IsQueuedForDeletion();
@@ -122,5 +129,18 @@ public static class NodeExtensions
     public static bool IsValidAndInsideTree([NotNullWhen(true)] this Node? node)
     {
         return node.IsValidExactly() && node.IsInsideTree();
+    }
+
+    public static void RemoveFromTree(this Node node)
+    {
+        if (node.IsValidAndInsideTree())
+        {
+            node.GetParent().RemoveChild(node);
+        }
+        else
+        {
+            LocalClient.Error(
+                $"Attempted to remove {node.GetPath()} from Tree but it's either not in the three or not valid");
+        }
     }
 }
