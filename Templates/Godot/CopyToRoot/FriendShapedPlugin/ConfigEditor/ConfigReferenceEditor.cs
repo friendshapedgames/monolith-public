@@ -153,7 +153,8 @@ public partial class ConfigReferenceEditor : FieldEditor
         {
             var typeId = ConfigServer.Instance.TypeIdFromType(configType);
             var allPossibleResults = ConfigServer.Instance.GetAllInstances()
-                .Where(config => config.InstanceInfo.TypeId == typeId).Select(a => a.Uid()).ToList();
+                .Where(config => ConfigServer.Instance.IsTypeIdAssignableTo(typeId, config.InstanceInfo.TypeId))
+                .Select(a => a.Uid()).ToList();
 
             CoreState.PopupManager.OpenPopup(_popup, this, LinkButton)
                 .Initialize(OnSelected, startingUid, allPossibleResults,

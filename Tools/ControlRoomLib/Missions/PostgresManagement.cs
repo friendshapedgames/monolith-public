@@ -35,7 +35,7 @@ public class PostgresManagement : Mission
         {
             var name = reader.GetString(0);
 
-            await OutPipe.AgentLogMessage($"Hello, {name}!");
+            await OutPipe.LogMessage($"Hello, {name}!");
         }
     }
 
@@ -49,7 +49,7 @@ public class PostgresManagement : Mission
     {
         await using var createTableCommand = source.CreateCommand();
         createTableCommand.CommandText = exactText;
-        await OutPipe.AgentLogMessage($"SQL: {exactText}");
+        await OutPipe.LogMessage($"SQL: {exactText}");
         createTableCommand.ExecuteNonQuery();
     }
 

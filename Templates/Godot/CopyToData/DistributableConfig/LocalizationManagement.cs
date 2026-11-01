@@ -198,7 +198,7 @@ public class LocalizationManagement : Mission
 
             stringBuilder.Append('%');
 
-            await OutPipe.AgentLogMessage($"{englishString} -> {stringBuilder}");
+            await OutPipe.LogMessage($"{englishString} -> {stringBuilder}");
             LocaleEnum.RandomLocale.ReadOrDefault().SetTranslation(id, stringBuilder.ToString());
         }
 
@@ -237,7 +237,7 @@ public class LocalizationManagement : Mission
 
         ConfigServer.Instance.WriteAllConfigs(MissionVariables.GameDirectoryFiles());
 
-        await OutPipe.AgentLogMessage($"Adding {reference.Id} {slug}: {rootTable.FallbackLocale}");
+        await OutPipe.LogMessage($"Adding {reference.Id} {slug}: {rootTable.FallbackLocale}");
     }
 
     private async Task ExportCsv(bool sortByKey, CsvFormat format)
@@ -326,7 +326,7 @@ public class LocalizationManagement : Mission
             : ControlRoomConstants.DefaultCsvConfiguration();
         using var csv = new CsvReader(reader, config with { NewLine = "\n" });
 
-        await OutPipe.AgentLogMessage($"Reading {path}");
+        await OutPipe.LogMessage($"Reading {path}");
         await csv.ReadAsync();
         csv.ReadHeader();
 
@@ -365,7 +365,7 @@ public class LocalizationManagement : Mission
                     rootTable.IdTable.ReadOrDefault().AddSlugAndId(id, slug);
                 }
 
-                await OutPipe.AgentLogMessage($"Reading slug {slug}");
+                await OutPipe.LogMessage($"Reading slug {slug}");
             }
             else
             {
@@ -383,12 +383,12 @@ public class LocalizationManagement : Mission
                 if (translation != null)
                 {
                     var trimmedTranslation = string.Join('\n', translation.Trim().SplitLines());
-                    await OutPipe.AgentLogMessage($"\tSetting {locale} {slug} to {trimmedTranslation}");
+                    await OutPipe.LogMessage($"\tSetting {locale} {slug} to {trimmedTranslation}");
                     mutable.SetTranslation(locale, trimmedTranslation);
                 }
                 else
                 {
-                    await OutPipe.AgentLogMessage($"\tSkipping for {locale} because there is no entry");
+                    await OutPipe.LogMessage($"\tSkipping for {locale} because there is no entry");
                 }
             }
 

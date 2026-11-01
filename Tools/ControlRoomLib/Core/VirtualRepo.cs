@@ -38,7 +38,7 @@ public class VirtualRepo
         {
             var rootGit = new ProgramGit(".");
             var ownRepoUrl = await rootGit.GetOriginUrl();
-            await OutPipe.AgentLogMessage(
+            await OutPipe.LogMessage(
                 $"VirtualRepo was not given a URL, so we assume this is the same as the current repo, which is: {ownRepoUrl}");
             _repoUrl = ownRepoUrl;
         }
@@ -108,7 +108,7 @@ public class VirtualRepo
 
     private Task VirtualRepoLog(string message)
     {
-        return OutPipe.AgentLogMessage($"VirtualRepo ({_localPathWithinSandbox}): {message}");
+        return OutPipe.LogMessage($"VirtualRepo ({_localPathWithinSandbox}): {message}");
     }
 
     public FileInfo BuildAndDumpVdf(SteamUploadSku uploadSku, DirectoryInfo contentRoot, string description)

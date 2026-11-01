@@ -8,5 +8,6 @@
   <PropertyGroup>
     <SecretPlanCoreDir>$(MSBuildThisFileDirectory)Packages/SecretPlanCore/</SecretPlanCoreDir>
     <ExTweenDir>$(MSBuildThisFileDirectory)Packages/ExTween/</ExTweenDir>
+    <FriendShapedGeneratorsDir>$(MSBuildThisFileDirectory)Packages/FriendShapedGenerators/</FriendShapedGeneratorsDir>
   </PropertyGroup>
 </Project>

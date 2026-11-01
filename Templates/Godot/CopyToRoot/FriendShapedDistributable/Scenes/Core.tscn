@@ -41,8 +41,8 @@ mouse_behavior_recursive = 1
 
 [node name="Framerate" type="RichTextLabel" parent="Debug" unique_id=1345970984]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 45.0
+offset_right = 72.0
+offset_bottom = 54.0
 theme_override_constants/outline_size = 4
 text = "52"
 fit_content = true
@@ -62,3 +62,6 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 script = ExtResource("7_4ulig")
+
+[node name="FmodBankLoader" type="FmodBankLoader" parent="." unique_id=841972290]
+bank_paths = ["res://Fmod/Desktop/Master.strings.bank", "res://Fmod/Desktop/Master.bank"]

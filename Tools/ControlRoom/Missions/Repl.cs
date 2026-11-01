@@ -11,7 +11,7 @@ public class Repl : Mission
 
     public override async Task Run()
     {
-        await OutPipe.AgentLogMessage("Entered REPL mode");
+        await OutPipe.LogMessage("Entered REPL mode");
 
         while (true)
         {

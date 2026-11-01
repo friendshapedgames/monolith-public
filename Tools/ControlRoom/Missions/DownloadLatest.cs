@@ -18,7 +18,7 @@ public class DownloadLatest : Mission
             await VirtualRepo.GetAndInitialize();
         await CopyRepoCore.CopyCoreRepoContents(sourceRepo, destinationRepo);
 
-        if ((await OutPipe.AgentPrompt("Do you want to pull `main` into this branch?", "no"))?.StartsWith("y") == true)
+        if ((await OutPipe.Prompt("Do you want to pull `main` into this branch?", "no"))?.StartsWith("y") == true)
         {
             var localGit = new ProgramGit(".");
             await localGit.MergeInRemoteBranch("main");

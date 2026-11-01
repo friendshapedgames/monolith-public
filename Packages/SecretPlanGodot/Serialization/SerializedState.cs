@@ -21,7 +21,7 @@ public class SerializedState<TSaveFile, TSettings>
     public TSettings Settings => _settings.Get();
     public TSaveFile SaveFile => _saveFile.Get();
 
-    public bool SaveFileDirty { get; set; }
+    public bool SaveFileDirty { get; private set; }
 
     public void SaveSettings()
     {
@@ -51,5 +51,10 @@ public class SerializedState<TSaveFile, TSettings>
         SaveFileDirty = false;
         SaveFileSaved?.Invoke();
         LocalClient.Print("Save file saved");
+    }
+
+    public void MarkSaveFileDirty()
+    {
+        SaveFileDirty = true;
     }
 }

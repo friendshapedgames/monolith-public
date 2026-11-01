@@ -19,7 +19,7 @@ public class Shortcut : Mission
             var key = PositionalArgs.Get(1, "Key").ParseAsString();
             var value = PositionalArgs.Get(2, "Value").ParseAsString();
             Platform.SerializedState.Shortcuts[key] = value;
-            await OutPipe.AgentLogMessage($"Added shortcut [{key}] = {value}");
+            await OutPipe.LogMessage($"Added shortcut [{key}] = {value}");
         }
         
         if (commandType == "remove")
@@ -27,11 +27,11 @@ public class Shortcut : Mission
             var key = PositionalArgs.Get(1, "Key").ParseAsString();
             if (Platform.SerializedState.Shortcuts.Remove(key))
             {
-                await OutPipe.AgentLogMessage($"Removed {key} successfully");
+                await OutPipe.LogMessage($"Removed {key} successfully");
             }
             else
             {
-                await OutPipe.AgentLogMessage($"{key} did not have a value, did nothing");
+                await OutPipe.LogMessage($"{key} did not have a value, did nothing");
             }
         }
 
@@ -39,7 +39,7 @@ public class Shortcut : Mission
         {
             foreach (var (existingKey, existingValue) in Platform.SerializedState.Shortcuts)
             {
-                await OutPipe.AgentLogMessage($"[{existingKey}] = {existingValue}");
+                await OutPipe.LogMessage($"[{existingKey}] = {existingValue}");
             }
         }
     }

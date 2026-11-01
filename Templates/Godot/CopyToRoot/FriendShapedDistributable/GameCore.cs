@@ -1,5 +1,5 @@
 using System;
-using BirdGame.Core;
+using System.Collections.Generic;
 using BirdGame.UI;
 using DATA_ASSEMBLY.Distributable;
 using DATA_ASSEMBLY.DistributableConfig;
@@ -17,7 +17,7 @@ using ConfirmModal = FriendShapedPlugin.ConfirmModal;
 
 namespace FriendShapedDistributable;
 
-public partial class GameCore : Node, IStateProvider<CoreState>
+public partial class GameCore : Node, ICoreStateProvider
 {
     private readonly CachedNode<AudioStreamPlayer> _buttonClickSoundPlayer = new("ClickSound");
     private readonly CachedNode<AudioStreamPlayer> _buttonRolloverSoundPlayer = new("RolloverSound");
@@ -31,10 +31,11 @@ public partial class GameCore : Node, IStateProvider<CoreState>
     private readonly CachedNode<LoadingScrim> _loadingScrim = new("LoadingScrim");
     private readonly CachedNode<SceneRoot> _sceneRoot = new("CurrentScene");
     private Vector2 _currentMouseDelta;
+    private readonly List<Action> _onDestroy = new();
     private float _saveTimer;
     private Node CurrentSceneRoot => _currentScene.Get(this);
     private LoadingScrim LoadingScrim => _loadingScrim.Get(this);
-    public CoreState State { get; } = new();
+    public CoreState CoreState { get; } = new();
 
     public override void _Ready()
     {
@@ -61,16 +62,16 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 #endif
 
         // setup settings
-        var settings = State.SerializedState.Settings;
+        var settings = CoreState.SerializedState.Settings;
         settings.ValueChanged += OnSettingChanged;
         settings.InvokeChangedForAllSettings();
 
         // setup own interconnections
-        State.LoadingStatus.Changed += UpdateLoadingScrim;
-        State.SerializedState.Settings.SaveDataActionRequested += SaveDataActionData;
-        State.SerializedState.Settings.GetLogsRequested += State.GetLogs;
-        State.SerializedState.Settings.OpenSaveDataRequested += State.OpenSaveData;
-        State.LoadSceneRequested += (cachedPackedScene, action) =>
+        CoreState.LoadingStatus.Changed += UpdateLoadingScrim;
+        CoreState.SerializedState.Settings.SaveDataActionRequested += SaveDataActionData;
+        CoreState.SerializedState.Settings.GetLogsRequested += CoreState.GetLogs;
+        CoreState.SerializedState.Settings.OpenSaveDataRequested += CoreState.OpenSaveData;
+        CoreState.LoadSceneRequested += (cachedPackedScene, action) =>
             _sceneRoot.Get(this).LoadScene(cachedPackedScene, action);
 
         // godot connections
@@ -85,16 +86,26 @@ public partial class GameCore : Node, IStateProvider<CoreState>
         CurrentSceneRoot.CallDeferred(Node.MethodName.AddChild, _firstScene.LoadAndInstantiate());
 
         // navigation
-        State.NavigationSystem.SetGamepadSupport(true);
-        var flexibleUiNavigator = (State.NavigationSystem.UiNavigator as FlexibleUiNavigator)!;
-        State.NavigationSystem.FocusState.Setup(new BoolProvider(() => State.Debug.LogUiNavigation), GetViewport());
-        flexibleUiNavigator.Setup(new BoolProvider(() => State.Debug.LogUiNavigation), GetViewport(),
+        CoreState.NavigationSystem.SetGamepadSupport(true);
+        var flexibleUiNavigator = (CoreState.NavigationSystem.UiNavigator as FlexibleUiNavigator)!;
+        CoreState.NavigationSystem.FocusState.Setup(new BoolProvider(() => CoreState.Debug.LogUiNavigation),
+            GetViewport());
+        flexibleUiNavigator.Setup(new BoolProvider(() => CoreState.Debug.LogUiNavigation), GetViewport(),
             () => _buttonRolloverSoundPlayer.Get(this).Play());
-        State.NavigationSystem.FocusState.SetNavigationOwner(_focusSink.Get(this));
+        CoreState.NavigationSystem.FocusState.SetNavigationOwner(_focusSink.Get(this));
 
-        State.SerializedState.Settings.AllowConsole = true;
+        CoreState.SerializedState.Settings.AllowConsole = true;
+
+        // var callable = ControllerIconsBridge.ConnectInputTypeChanged(OnInputChanged);
+        // _onDestroy.Add(() => { ControllerIconsBridge.DisconnectInputTypeChanged(callable); });
 
         GameSpecificStuff();
+    }
+
+    private void OnInputChanged(ControllerIconsBridge.InputType inputType, int controllerIndex)
+    {
+        LocalClient.Print("Input changed: " + inputType + " " + controllerIndex);
+        // todo: do something with CoreState.NavigationSystem.CurrentNavigationMode 
     }
 
     private void GameSpecificStuff()
@@ -104,6 +115,12 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 
     public override void _ExitTree()
     {
+        foreach (var item in _onDestroy)
+        {
+            item.Invoke();
+        }
+        _onDestroy.Clear();
+        
         foreach (var config in ConfigServer.Instance.GetAllInstancesOfType<IConfigWithExtraResource>())
         {
             foreach (var resource in config.GetOwnedResources())
@@ -115,13 +132,13 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 
     private void OnWindowLostFocus()
     {
-        State.IsGameInFocus = false;
+        CoreState.IsGameInFocus = false;
         OnWindowFocusChanged();
     }
 
     private void OnWindowGainedFocus()
     {
-        State.IsGameInFocus = true;
+        CoreState.IsGameInFocus = true;
         OnWindowFocusChanged();
     }
 
@@ -135,24 +152,24 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 
     private void SaveDataActionData(Action<SaveFile> action, LocalizationTableIds message)
     {
-        State.PopupManager.OpenPopup(_confirmModal, null, null).Initialize(
-            State.TranslatedFromId(message), false,
-            () => { action(State.SerializedState.SaveFile); });
+        CoreState.PopupManager.OpenPopup(_confirmModal, null, null).Initialize(
+            CoreState.TranslatedFromId(message), false,
+            () => { action(CoreState.SerializedState.SaveFile); });
     }
 
     private void UpdateLoadingScrim()
     {
-        LoadingScrim.SetState(State.LoadingStatus.ShouldShowLoadingScrim);
+        LoadingScrim.SetState(CoreState.LoadingStatus.ShouldShowLoadingScrim);
     }
 
     private void OnFocusedControlChanged(Control newlyFocusedControl)
     {
-        if (State.Debug.LogUiNavigation)
+        if (CoreState.Debug.LogUiNavigation)
         {
             LocalClient.Print($"NAVI: Godot focus {newlyFocusedControl.Name}");
         }
 
-        State.NavigationSystem.UiNavigator.OnFocusChanged(newlyFocusedControl);
+        CoreState.NavigationSystem.UiNavigator.OnFocusChanged(newlyFocusedControl);
     }
 
     private void OnSettingChanged(string settingName)
@@ -161,14 +178,14 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 
     private void OnWindowFocusChanged()
     {
-        State.MouseLock.OnChanged();
+        CoreState.MouseLock.OnChanged();
     }
 
     public override void _Input(InputEvent inputEvent)
     {
         if (inputEvent is InputEventJoypadButton or InputEventJoypadMotion)
         {
-            State.NavigationSystem.SetNavigationMode(NavigationMode.Gamepad);
+            CoreState.NavigationSystem.SetNavigationMode(NavigationMode.Gamepad);
         }
 
         var isNavigation = inputEvent.IsActionPressed(StringNameCache.UiUp) ||
@@ -179,7 +196,7 @@ public partial class GameCore : Node, IStateProvider<CoreState>
 
         if (inputEvent is InputEventKey key && isNavigation)
         {
-            State.NavigationSystem.SetNavigationMode(NavigationMode.Keyboard);
+            CoreState.NavigationSystem.SetNavigationMode(NavigationMode.Keyboard);
         }
 
         if (inputEvent is InputEventMouseButton mouseButton)
@@ -187,7 +204,7 @@ public partial class GameCore : Node, IStateProvider<CoreState>
             var hoveredControl = GetViewport().GuiGetHoveredControl();
             var shouldPlaySound = hoveredControl.IsValidAndNotQueuedForDeletion() &&
                                   (hoveredControl.FocusMode != Control.FocusModeEnum.None || hoveredControl is Button)
-                                  && !State.MouseLock.IsMouseLocked();
+                                  && !CoreState.MouseLock.IsMouseLocked();
 
             if (mouseButton.ButtonIndex == MouseButton.Left && !inputEvent.IsPressed() && shouldPlaySound)
             {
@@ -215,23 +232,23 @@ public partial class GameCore : Node, IStateProvider<CoreState>
             else
             {
                 // we only set input mode to mouse if the mouse is not captured because otherwise we'd be thrashing between the two all the time during gameplay.
-                State.NavigationSystem.SetNavigationMode(NavigationMode.Mouse);
+                CoreState.NavigationSystem.SetNavigationMode(NavigationMode.Mouse);
             }
         }
     }
 
     public override void _Process(double delta)
     {
-        if (State.SerializedState.Settings.GarbageCollectEveryFrame)
+        if (CoreState.SerializedState.Settings.GarbageCollectEveryFrame)
         {
             GC.Collect();
         }
 
-        State.NavigationSystem.UiNavigator.UpdateHoverAndFocus(State.NavigationSystem.CurrentNavigationMode);
+        CoreState.NavigationSystem.UiNavigator.UpdateHoverAndFocus(CoreState.NavigationSystem.CurrentNavigationMode);
 
-        if (State.SerializedState.SaveFileDirty && _saveTimer < 0f)
+        if (CoreState.SerializedState.SaveFileDirty && _saveTimer < 0f)
         {
-            State.SerializedState.SaveSaveFile();
+            CoreState.SerializedState.SaveSaveFile();
             _saveTimer = 5f;
         }
 
@@ -241,9 +258,9 @@ public partial class GameCore : Node, IStateProvider<CoreState>
         }
         else
         {
-            var mouseLockState = State.MouseLock.DesiredState;
+            var mouseLockState = CoreState.MouseLock.DesiredState;
 
-            if (State.NavigationSystem.CurrentNavigationMode == NavigationMode.Mouse)
+            if (CoreState.NavigationSystem.CurrentNavigationMode == NavigationMode.Mouse)
             {
                 Input.MouseMode = mouseLockState;
             }

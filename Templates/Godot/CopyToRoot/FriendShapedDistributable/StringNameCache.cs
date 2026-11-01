@@ -1,9 +1,10 @@
 ﻿using Godot;
 
-namespace BirdGame.Core;
+namespace FriendShapedDistributable;
 
 public static class StringNameCache
 {
+    public static readonly StringName ThemeFontColor = new("font_color");
     public static readonly StringName BusMaster = new("Master");
     public static readonly StringName BusNull = new("Null");
     public static readonly StringName Console = new("console");
@@ -47,4 +48,7 @@ public static class StringNameCache
     public static readonly StringName Flip = new("flip");
     public static readonly StringName ShaderParameterColor = new("color");
     public static readonly StringName ShaderParameterUvOffsetAndScale = new("uv_offset_and_scale");
+    public static readonly StringName ShaderParameterWidthReferencePixels = new("width_reference_pixels");
+    public static readonly StringName FmodServer = new("FmodServer");
+    public static readonly StringName ControllerIcons = new("ControllerIcons");
 }

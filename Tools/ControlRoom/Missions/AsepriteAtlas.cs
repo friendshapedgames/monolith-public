@@ -13,7 +13,7 @@ public class AsepriteAtlas : Mission
     {
         var fileNames = MissionVariables.GameDirectoryFiles().GetFilesAt("Art/Aseprite");
 
-        await OutPipe.AgentLogMessage($"Atlasing {fileNames.Count} files");
+        await OutPipe.LogMessage($"Atlasing {fileNames.Count} files");
 
         var aseprite = new AsepriteProgram(MissionVariables.GameDirectory);
         await aseprite.BuildAtlas(fileNames, "Art/FullAtlas");

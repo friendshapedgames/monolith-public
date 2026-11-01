@@ -26,32 +26,15 @@ public partial class ConfigInstanceTitleDisplay : Control
         {
             return;
         }
-            
+
         var instance = ConfigServer.Instance.GetInstanceUntyped(uid);
-        
+
         if (instance != null)
         {
             var instanceInfo = instance.InstanceInfo;
 
             _nameLabel.Get(this).Text = instanceInfo.NameWithoutPathOrExtensionOrType();
             var infoText = $"{instanceInfo.TypeId} - {instanceInfo.InstanceId}";
-
-            if (instance.SourceFileSystem == null)
-            {
-                if (!GameConstants.IsEditor)
-                {
-                    infoText += "\nReadonly";
-                }
-                else
-                {
-                    infoText += "\nVanilla";
-                }
-            }
-            else
-            {
-                infoText += "\nExternal Mod";
-            }
-            
             _infoLabel.Get(this).Text = infoText;
         }
         else

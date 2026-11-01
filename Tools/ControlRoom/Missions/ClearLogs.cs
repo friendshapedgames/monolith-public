@@ -16,7 +16,7 @@ public class ClearLogs : Mission
         {
             if (file != ControlRoomConstants.CurrentLogFile)
             {
-                await OutPipe.AgentLogMessage($"Deleting {file}");
+                await OutPipe.LogMessage($"Deleting {file}");
                 files.DeleteFile(file);
             }
         }

@@ -40,7 +40,7 @@ public class MissionVariablesEdit : Mission
             case "list":
                 foreach (var (key, propertyInfo) in nameToProperty)
                 {
-                    await OutPipe.AgentLogMessage(
+                    await OutPipe.LogMessage(
                         $"{key} ({propertyInfo.PropertyType.Name}) = {ControlRoomConstants.HumanReadableStringify(propertyInfo.GetValue(MissionVariables))}");
                 }
 
@@ -51,7 +51,7 @@ public class MissionVariablesEdit : Mission
                 if (Reflection.TryParseTo(nameToProperty[keyToAdd].PropertyType, valueToAddAsString, out var value))
                 {
                     nameToProperty[keyToAdd].SetValue(Platform.SerializedState.MissionVariables, value);
-                    await OutPipe.AgentLogMessage($"Set default: --{keyToAdd}={value}");
+                    await OutPipe.LogMessage($"Set default: --{keyToAdd}={value}");
                 }
                 else
                 {
@@ -63,7 +63,7 @@ public class MissionVariablesEdit : Mission
             case "unset":
                 var keyToRemove = PositionalArgs.Get(1, "Variable Name").ParseAsString().ToLower();
                 var valueToRemove = nameToProperty[keyToRemove].GetValue(new MissionVariables());
-                await OutPipe.AgentLogMessage($"Set default: --{keyToRemove}={valueToRemove}");
+                await OutPipe.LogMessage($"Set default: --{keyToRemove}={valueToRemove}");
 
 
                 break;

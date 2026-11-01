@@ -16,27 +16,27 @@ public static class OutPipe
     private static readonly SemaphoreSlim _consoleLock = new(1, 1);
     private static readonly SemaphoreSlim _logLock = new(1, 1);
 
-    public static async Task AgentLogMessage(string? message)
+    public static async Task LogMessage(string? message)
     {
-        await AgentLogInternal("💬", message);
+        await LogInternal("💬", message);
     }
     
-    public static async Task AgentLogRun(string message, LogLevel logLevel = LogLevel.ConsoleAndLogFile)
+    public static async Task LogRunCommand(string message, LogLevel logLevel = LogLevel.ConsoleAndLogFile)
     {
-        await AgentLogInternal("💻", message, logLevel);
+        await LogInternal("💻", message, logLevel);
     }
     
-    public static async Task AgentLogWarning(string message)
+    public static async Task LogWarning(string message)
     {
-        await AgentLogInternal("🔶", message);
+        await LogInternal("🔶", message);
     }
     
-    public static async Task AgentLogError(string message)
+    public static async Task LogError(string message)
     {
-        await AgentLogInternal("💥", message);
+        await LogInternal("💥", message);
     }
 
-    private static async Task AgentLogInternal(string prefix, string? message, LogLevel logLevel = LogLevel.ConsoleAndLogFile)
+    private static async Task LogInternal(string prefix, string? message, LogLevel logLevel = LogLevel.ConsoleAndLogFile)
     {
         var composedString = $"{prefix} {message}\n";
         var charArray = composedString.ToCharArray();
@@ -85,9 +85,9 @@ public static class OutPipe
     }
 
     [Pure]
-    public static async Task<string?> AgentPrompt(string message, string? defaultAnswer = null)
+    public static async Task<string?> Prompt(string message, string? defaultAnswer = null)
     {
-        await AgentLogInternal("❓", message + $" (type answer to continue{(defaultAnswer == null ? "" : $", default answer: {defaultAnswer}")})");
+        await LogInternal("❓", message + $" (type answer to continue{(defaultAnswer == null ? "" : $", default answer: {defaultAnswer}")})");
         var input = Console.ReadLine();
         if (string.IsNullOrWhiteSpace(input))
         {

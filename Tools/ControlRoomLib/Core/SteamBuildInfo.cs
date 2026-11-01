@@ -1,6 +1,29 @@
 ﻿namespace ControlRoomLib.Core;
 
-public readonly record struct SteamBuildInfo(long AppId, string BranchToForkFrom, SteamDepotInfo[] Depots)
+public enum MergeMainBehavior
+{
+    /// <summary>
+    ///     Safe default
+    /// </summary>
+    AskBeforeMergingMain,
+
+    /// <summary>
+    ///     Playtests want this because they want the latest and greatest stuff
+    /// </summary>
+    AlwaysMergeMain,
+
+    /// <summary>
+    ///     Typically demos don't want main once the fullgame is under development
+    /// </summary>
+    NeverMergeMain
+}
+
+public readonly record struct SteamBuildInfo(
+    long AppId,
+    string AppExeName,
+    string BranchToForkFrom,
+    MergeMainBehavior MergeMainBehavior,
+    SteamDepotInfo[] Depots)
 {
     public IEnumerable<SteamUploadSku> UploadSkus()
     {

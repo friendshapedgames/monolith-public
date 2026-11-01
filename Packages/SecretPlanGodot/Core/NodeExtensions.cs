@@ -130,17 +130,38 @@ public static class NodeExtensions
     {
         return node.IsValidExactly() && node.IsInsideTree();
     }
-
-    public static void RemoveFromTree(this Node node)
+    
+    public static bool RemoveFromTreeIfNotAlready(this Node node)
     {
         if (node.IsValidAndInsideTree())
         {
             node.GetParent().RemoveChild(node);
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool RemoveFromTree(this Node node)
+    {
+        if (node.IsValidAndInsideTree())
+        {
+            node.GetParent().RemoveChild(node);
+            return true;
         }
         else
         {
             LocalClient.Error(
                 $"Attempted to remove {node.GetPath()} from Tree but it's either not in the three or not valid");
+            return false;
+        }
+    }
+
+    public static void SetParentToNull(this Node? node)
+    {
+        if (node.IsValidExactly())
+        {
+            node.GetParent().RemoveChild(node);
         }
     }
 }

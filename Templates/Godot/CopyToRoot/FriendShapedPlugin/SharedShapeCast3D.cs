@@ -16,7 +16,7 @@ public partial class SharedShapeCast3D : ShapeCast3D
     }
     
     public IEnumerable<ShapeCastResult3D> DoShapeCast(Shape3D shape, Vector3 globalStart, Vector3 relativeEnd,
-        CollisionMaskEnum maskEnum)
+        CollisionLayersMaskEnum maskEnum)
     {
         Shape = shape;
         CollisionMask = (uint) maskEnum;

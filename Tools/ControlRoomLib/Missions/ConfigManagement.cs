@@ -21,7 +21,7 @@ public class ConfigManagement : Mission
         var command = PositionalArgs.Get(0, "Command")
             .ParseAsSpecificString("list", "create", "add", "renormalize", "read", "catalogue", "copy", "rename");
 
-        await OutPipe.AgentLogMessage($"Loading assembly: {DataAssemblyName()}");
+        await OutPipe.LogMessage($"Loading assembly: {DataAssemblyName()}");
         Assembly.Load(DataAssemblyName());
 
         switch (command)
@@ -71,7 +71,7 @@ public class ConfigManagement : Mission
             throw new Exception("Rename failed!");
         }
         
-        await OutPipe.AgentLogMessage($"Renamed {oldName} to {newName}");
+        await OutPipe.LogMessage($"Renamed {oldName} to {newName}");
 
         await WriteConfigCatalogue();
     }
@@ -186,7 +186,7 @@ public class ConfigManagement : Mission
                 value = Stringify(value);
             }
 
-            await OutPipe.AgentLogMessage(member.Name + ": " + value);
+            await OutPipe.LogMessage(member.Name + ": " + value);
         }
     }
 
@@ -250,13 +250,13 @@ public class ConfigManagement : Mission
 
         foreach (var config in ConfigServer.Instance.GetAllInstances())
         {
-            await OutPipe.AgentLogMessage("- " + config);
+            await OutPipe.LogMessage("- " + config);
         }
     }
 
     public static async Task SetupConfigServer(IFileSystem gameDirectoryFiles)
     {
-        await OutPipe.AgentLogMessage("Loading Configs into memory");
+        await OutPipe.LogMessage("Loading Configs into memory");
         ConfigServer.Clear();
         foreach (var filePath in gameDirectoryFiles.GetFilesAt(".", ConfigServer.FileExtensionNoDot))
         {

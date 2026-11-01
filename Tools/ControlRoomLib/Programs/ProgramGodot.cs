@@ -14,7 +14,7 @@ public abstract class ProgramGodot : ExternalProgramFromShortcut
 
         if (outputDirectory.Exists)
         {
-            await OutPipe.AgentLogMessage($"Clearing {outputDirectory.FullName} before we start build.");
+            await OutPipe.LogMessage($"Clearing {outputDirectory.FullName} before we start build.");
 
             try
             {
@@ -22,11 +22,11 @@ public abstract class ProgramGodot : ExternalProgramFromShortcut
             }
             catch (Exception e)
             {
-                await OutPipe.AgentLogWarning($"Could not fully clear {outputDirectory}: {e}");
+                await OutPipe.LogWarning($"Could not fully clear {outputDirectory}: {e}");
             }
         }
 
-        await OutPipe.AgentLogMessage($"Creating {outputDirectory.FullName}");
+        await OutPipe.LogMessage($"Creating {outputDirectory.FullName}");
         outputDirectory.Create();
 
         await Run(

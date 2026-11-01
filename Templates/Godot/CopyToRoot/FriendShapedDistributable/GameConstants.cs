@@ -17,7 +17,7 @@ public static class GameConstants
         get
         {
 #if !TOOLS
-            LocalClient.Error("EditorProjectRoot was requested outside of editor context, this won't work.");
+            SecretPlanGodot.Core.LocalClient.Error("EditorProjectRoot was requested outside of editor context, this won't work.");
 #endif
 
             return new RealFileSystem(ProjectSettings.GlobalizePath("res://"));

@@ -1,4 +1,5 @@
 ﻿using Godot;
+using Range = Godot.Range;
 
 namespace SecretPlanGodot.Core;
 
@@ -12,5 +13,15 @@ public static class ControlExtensions
         self.SetFocusNeighbor(Side.Left, left.GetPath(self));
         self.SetFocusNeighbor(Side.Right, right.GetPath(self));
         self.SetFocusNeighbor(Side.Bottom, bottom.GetPath(self));
+    }
+
+    public static bool IsInteractive(this Control? self)
+    {
+        if (!self.IsValidAndInsideTree())
+        {
+            return false;
+        }
+
+        return self is BaseButton or LineEdit or TextEdit or Range;
     }
 }

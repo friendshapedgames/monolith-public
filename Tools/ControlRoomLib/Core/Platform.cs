@@ -125,12 +125,12 @@ public static class Platform
                 break;
             }
             case 0:
-                await OutPipe.AgentLogError($"No missions found matching {desiredMissionName}");
+                await OutPipe.LogError($"No missions found matching {desiredMissionName}");
                 break;
             default:
-                await OutPipe.AgentLogError(
+                await OutPipe.LogError(
                     $"Found {queryResult.Count} matching missions:\n{string.Join("\n", queryResult.Select(a => "- " + missionDictionary[a].Name))}");
-                await OutPipe.AgentLogError("Please run again with more specific mission name");
+                await OutPipe.LogError("Please run again with more specific mission name");
                 break;
         }
     }

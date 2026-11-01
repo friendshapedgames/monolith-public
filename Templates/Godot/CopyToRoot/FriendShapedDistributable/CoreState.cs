@@ -35,6 +35,7 @@ public class CoreState
     public LoadingStatus LoadingStatus { get; } = new();
     public PopupManager PopupManager { get; } = new();
     public bool IsGameInFocus { get; set; } = true;
+    public WorldState? CurrentWorldState { get; private set; }
 
     public void GetLogs()
     {
@@ -126,5 +127,48 @@ public class CoreState
     public IEnumerable<SecretPlanDebugger> AllDebuggers()
     {
         yield return Debug;
+        if (CurrentWorldState != null)
+        {
+            yield return CurrentWorldState.Debug;
+        }
+    }
+
+    /// <summary>
+    ///     If the given state is our current world state, set current to null, otherwise nothing
+    /// </summary>
+    public void ClearCurrentWorldState(WorldState state)
+    {
+        if (CurrentWorldState == state)
+        {
+            CurrentWorldState = null;
+        }
+    }
+
+    public void SetCurrentWorldState(WorldState state)
+    {
+        CurrentWorldState = state;
+    }
+
+    /// <summary>
+    ///     Returns true if the player generally should have control at the bottom level
+    /// </summary>
+    public bool PlayerUiHasControl()
+    {
+        if (!IsGameInFocus)
+        {
+            return false;
+        }
+
+        if (PopupManager.IsPopupOpen)
+        {
+            return false;
+        }
+
+        if (Debug.IsConsoleOpen)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

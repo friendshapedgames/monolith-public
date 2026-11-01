@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" uid="uid://dcvdbn45cc3wq" path="res://FriendShapedPlugin/DeveloperConsole.cs" id="1_n1hwt"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_n1hwt"]
+bg_color = Color(0.23529412, 0.23529412, 0.23529412, 0.44313726)
+
 [node name="DeveloperConsole" type="Node" unique_id=905380729]
 script = ExtResource("1_n1hwt")
 
@@ -22,6 +25,7 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 404.0
 grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_n1hwt")
 
 [node name="Stack" type="VBoxContainer" parent="Layer/Root/PanelContainer" unique_id=37693444]
 layout_mode = 2

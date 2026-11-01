@@ -204,7 +204,7 @@ public partial class ConfigEditor : Control
             .Initialize($"Rename {configToRename.InstanceInfo.ShortName()}", configToRename.GetType(), this,
                 newConfigName =>
                 {
-                    var fileSystem = configToRename.SourceFileSystem;
+                    var fileSystem = configToRename.GetWritableFileSystem();
                     if (fileSystem == null)
                     {
                         if (GameConstants.IsEditor)
@@ -233,7 +233,10 @@ public partial class ConfigEditor : Control
     {
         if (!GameConstants.IsEditor)
         {
-            instance.SourceFileSystem = CommonSerializationConstants.AppDataFiles.CreateDirectory("Mods");
+            // Any new config created by the editor will be dropped in user://Mods
+            instance.Origin =
+                new ConfigOrigin(
+                    CommonSerializationConstants.AppDataFiles.CreateDirectory("Mods"), true);
         }
 
         OpenPaneForConfig(instance.Uid());
@@ -255,7 +258,14 @@ public partial class ConfigEditor : Control
                 .OpenPopup(_nameNewConfigPopup, this, null)
                 .Initialize($"Name new {configType.Name} instance", configType, this, newText =>
                 {
-                    var instance = ConfigServer.Instance.CreateInstance(configType, newText);
+                    string? path = null;
+
+                    if (GameConstants.IsEditor)
+                    {
+                        path = "Config";
+                    }
+                    
+                    var instance = ConfigServer.Instance.CreateInstance(configType, newText, path);
                     if (instance == null)
                     {
                         return;
@@ -320,12 +330,6 @@ public partial class ConfigEditor : Control
             nextTask();
         }
 
-        // if (Input.IsActionJustPressed("ui_refresh"))
-        // {
-        //     _parentCore.GetOrNull(this)
-        //         ?.LoadScene(new CachedPackedScene<Node>("res://Scenes/ConfigEditor.tscn"), scene => { });
-        // }
-
         _flushTimer -= (float)delta;
         if (_flushTimer < 0 && _dirtyUids.Count > 0)
         {
@@ -337,24 +341,19 @@ public partial class ConfigEditor : Control
                 var config = ConfigServer.Instance.GetInstanceUntyped(uid);
                 if (config != null)
                 {
-                    if (config.SourceFileSystem == null)
+                    var fileSystem = config.GetWritableFileSystem();
+
+                    if (fileSystem != null)
                     {
-                        if (GameConstants.IsEditor)
-                        {
-                            ConfigServer.Instance.WriteConfig(GameConstants.EditorProjectRoot, config);
-                        }
-                        else
-                        {
-                            LocalClient.Print(
-                                $"{config.InstanceInfo.ShortName()} was NOT saved because it is readonly! Will still be edited for this run.");
-                        }
+                        ConfigServer.Instance.WriteConfig(fileSystem, config);
                     }
                     else
                     {
-                        ConfigServer.Instance.WriteConfig(config.SourceFileSystem, config);
+                        LocalClient.Print(
+                            $"{config.InstanceInfo.ShortName()} was NOT saved because it is readonly! Will still be edited for this run.");
                     }
 
-                    if (_panesLookup.TryGetValue(uid, out var value))
+                    if (_panesLookup.TryGetValue(uid, out var value) && value.IsValidAndNotQueuedForDeletion())
                     {
                         value.NotifyCleaned();
                     }
@@ -488,4 +487,61 @@ public partial class ConfigEditor : Control
     {
         public static readonly CommandPaletteCommand Empty = new(string.Empty, () => { });
     }
+}
+
+
+public static class ConfigExtensions
+{
+    public static bool IsWritable(this ConfigOrigin origin)
+    {
+        switch (origin.GetOriginType())
+        {
+            case ConfigOriginType.BaseGame:
+                return GameConstants.IsEditor;
+            case ConfigOriginType.LocalModsFolder:
+                return true;
+            case ConfigOriginType.ExternalWorkshop:
+                return false;
+        }
+
+        return false;
+    }
+
+    public static IFileSystem? GetWritableFileSystem(this Config config)
+    {
+        if (config.Origin.IsWritable())
+        {
+            var fileSystem = config.Origin.SourceFileSystem;
+            if(GameConstants.IsEditor && fileSystem == null)
+            {
+                return GameConstants.EditorProjectRoot;
+            }
+            return fileSystem;
+        }
+
+        return null;
+    }
+    
+    public static ConfigOriginType GetOriginType(this ConfigOrigin origin)
+    {
+        if (origin.IsBaseGameConfig())
+        {
+            return ConfigOriginType.BaseGame;
+        }
+
+        if (origin.IsInLocalModsFolder)
+        {
+            return ConfigOriginType.LocalModsFolder;
+        }
+
+        return ConfigOriginType.ExternalWorkshop;
+    }
+}
+
+
+public enum ConfigOriginType
+{
+    BaseGame,
+    LocalModsFolder,
+    ExternalWorkshop
 }

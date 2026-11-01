@@ -1,7 +1,7 @@
 {
     "name": "com.friendshapedgames.ui",
     "version": "0.0.1",
-    "displayName": "Secret Plan UI",
+    "displayName": "Friend Shaped UI",
     "unity": "2020.3",
     "dependencies": {
         "com.friendshapedgamesore": "0.0.1",

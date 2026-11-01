@@ -13,6 +13,6 @@ public class Echo : Mission
     public override async Task Run()
     {
         var message = PositionalArgs.Get(0, "message").ParseAsString();
-        await OutPipe.AgentLogMessage(message);
+        await OutPipe.LogMessage(message);
     }
 }

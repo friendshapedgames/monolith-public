@@ -82,7 +82,7 @@ public partial class ResourceReferenceLink : Control
         }
         else
         {
-            if (!SecretResourceLoader.Exists(path))
+            if (!SecretResourceLoader.ExistsInAnyContext(path))
             {
                 return (path, ResourceStatus.PathDoesNotResolve);
             }

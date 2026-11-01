@@ -7,8 +7,10 @@ namespace FriendShapedPlugin.ConfigEditor;
 
 public partial class ColorEditor : FieldEditor
 {
-    private readonly CachedNode<ColorPicker> _colorPicker = new("ColorPicker");
+    private readonly CachedNode<ColorPicker> _colorPicker = new("VBoxContainer/ColorPicker");
     private readonly CachedNode<ColorRect> _colorRect = new("ColorRect");
+    private readonly CachedNode<HSlider> _alphaSlider = new("VBoxContainer/AlphaSlider/HSlider");
+    private readonly CachedNode<Control> _sliderRoot = new("VBoxContainer/AlphaSlider");
     private ConfigField? _configField;
 
     public override void Initialize(ConfigField configField)
@@ -21,9 +23,28 @@ public partial class ColorEditor : FieldEditor
         }
 
         _colorPicker.Get(this).Color = color.ToColor();
+        _alphaSlider.Get(this).Value = color.ToColor().A;
         Refresh();
 
         _colorPicker.Get(this).ColorChanged += ColorChanged;
+        _alphaSlider.Get(this).ValueChanged += AlphaSliderChanged;
+
+        if (configField.GetValue() is SerializedColorRgba)
+        {
+            _sliderRoot.Get(this).Visible = true;
+            _colorPicker.Get(this).EditAlpha = true;
+        }
+        
+        if (configField.GetValue() is SerializedColorRgb)
+        {
+            _sliderRoot.Get(this).Visible = false;
+            _colorPicker.Get(this).EditAlpha = false;
+        }
+    }
+
+    private void AlphaSliderChanged(double value)
+    {
+        ColorChanged(_colorPicker.Get(this).Color);
     }
 
     private void ColorChanged(Color color)
@@ -32,6 +53,8 @@ public partial class ColorEditor : FieldEditor
         {
             return;
         }
+
+        color.A = (float)_alphaSlider.Get(this).Value;
 
         if (_configField.GetValue() is SerializedColorRgba)
         {

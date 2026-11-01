@@ -66,12 +66,12 @@ public class ExternalProgram
         MostRecentExitCode = process.ExitCode;
         if (MostRecentExitCode == 0)
         {
-            await OutPipe.AgentLogRun($"🆗 {Nickname} finished", LogLevel);
+            await OutPipe.LogRunCommand($"🆗 {Nickname} finished", LogLevel);
         }
         else
         {
-            await OutPipe.AgentLogRun(
-                $"🔶 {Nickname} finished with exit code: {MostRecentExitCode} (this might be expected)", LogLevel);
+            await OutPipe.LogRunCommand(
+                $"🔶 {Nickname} finished with nonzero exit code: {MostRecentExitCode}", LogLevel);
         }
     }
 
@@ -99,7 +99,7 @@ public class ExternalProgram
             }
         }
 
-        await OutPipe.AgentLogRun(
+        await OutPipe.LogRunCommand(
             $"🟦 Running `{_invokeString} {string.Join(" ", args)}` at working directory {new DirectoryInfo(WorkingDirectory).FullName}", LogLevel);
 
         var process = new Process

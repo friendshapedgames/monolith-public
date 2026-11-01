@@ -18,7 +18,7 @@ public partial class SharedRaycast3D : RayCast3D
     /// <summary>
     /// Does a basic raycast
     /// </summary>
-    public RaycastResult3D? DoRaycast(Vector3 globalStart, Vector3 relativeEnd, CollisionMaskEnum maskEnum)
+    public RaycastResult3D? DoRaycast(Vector3 globalStart, Vector3 relativeEnd, CollisionLayersMaskEnum maskEnum)
     {
         ClearExceptions();
         return DoRaycastIgnoringExceptions(globalStart, relativeEnd, maskEnum);
@@ -28,7 +28,7 @@ public partial class SharedRaycast3D : RayCast3D
     /// Does a raycast ignoring the current state of the exclusion list (assumes that it was written to intentionally)
     /// </summary>
     public RaycastResult3D? DoRaycastIgnoringExceptions(Vector3 globalStart, Vector3 relativeEnd,
-        CollisionMaskEnum maskEnum)
+        CollisionLayersMaskEnum maskEnum)
     {
         CollisionMask = (uint)maskEnum;
         GlobalPosition = globalStart;
@@ -54,7 +54,7 @@ public partial class SharedRaycast3D : RayCast3D
     /// <summary>
     /// Does a raycast excluding the provided elements
     /// </summary>
-    public RaycastResult3D? DoRaycastExcluding(Vector3 globalStart, Vector3 relativeEnd, CollisionMaskEnum maskEnum, IEnumerable<CollisionObject3D> exceptions)
+    public RaycastResult3D? DoRaycastExcluding(Vector3 globalStart, Vector3 relativeEnd, CollisionLayersMaskEnum maskEnum, IEnumerable<CollisionObject3D> exceptions)
     {
         ClearExceptions();
         foreach (var exception in exceptions)

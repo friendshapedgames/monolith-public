@@ -162,7 +162,7 @@ public class CopyRepoCore : Mission
             var missionName = new FileInfo(fileName).Name.RemoveFileExtension();
             if (!missionsToKeep.Contains(missionName))
             {
-                await OutPipe.AgentLogMessage($"Deleting mission: {missionName}");
+                await OutPipe.LogMessage($"Deleting mission: {missionName}");
                 missionFiles.DeleteFile(fileName);
             }
         }
@@ -182,7 +182,7 @@ public class CopyRepoCore : Mission
 
         if (await destinationRepo.Git.CountPendingFiles() == 0)
         {
-            await OutPipe.AgentLogMessage("Up-to-date. Nothing to upload");
+            await OutPipe.LogMessage("Up-to-date. Nothing to upload");
             return;
         }
 
@@ -225,7 +225,7 @@ public class CopyRepoCore : Mission
     {
         var dir = new DirectoryInfo(sourceDirectory);
 
-        await OutPipe.AgentLogMessage($"Copying directory {sourceDirectory} -> {destinationDirectory}");
+        await OutPipe.LogMessage($"Copying directory {sourceDirectory} -> {destinationDirectory}");
 
         if (!dir.Exists)
         {
@@ -254,7 +254,7 @@ public class CopyRepoCore : Mission
         var destPath = destinationFiles.GetPathOfFile(filePath);
         var file = new FileInfo(sourcePath);
 
-        await OutPipe.AgentLogMessage($"Copying file {sourcePath} -> {destPath}");
+        await OutPipe.LogMessage($"Copying file {sourcePath} -> {destPath}");
         file.CopyTo(destPath, true);
     }
 }

@@ -15,7 +15,7 @@ public class BuildGodotProject : Mission
     {
         MissionAssert.MissionVariableNotNull(MissionVariables, nameof(MissionVariables.GameDirectory));
         var buildTarget = PositionalArgs.Get(0, "Target OS").ParseAsBuildTarget();
-        var steamBuildInfo = ControlRoomConstants.GetFlockAroundSteamBuildInfo(SteamAppType.FullGame);
+        var steamBuildInfo = ControlRoomConstants.GetGameSteamBuildInfo(GameDirectory, SteamAppType.FullGame);
         
         var virtualRepo = await VirtualRepo.GetAndInitialize();
         
@@ -23,14 +23,14 @@ public class BuildGodotProject : Mission
         MissionAssert.IsTrue(directoryInfo.Exists, $"Directory {GameDirectory} does not exist");
         
         var godot = new ProgramGodotLatest(virtualRepo.Files.GetCurrentDirectory());
-        await godot.RunPresetBuild(GameDirectory, "FlockAround", buildTarget);
+        await godot.RunPresetBuild(GameDirectory, "Game", buildTarget);
         if (!godot.WasSuccessful())
         {
             throw new Exception("Godot build failed!");
         }
 
         var outputDirectory = godot.GetOutputDirectoryForProject(GameDirectory, buildTarget);
-        await OutPipe.AgentLogMessage("Preparing local environment for smoke test");
+        await OutPipe.LogMessage("Preparing local environment for smoke test");
         await File.WriteAllTextAsync(Path.Join(outputDirectory.FullName, "steam_appid.txt"), steamBuildInfo.AppId.ToString());
         
         var explorer = ControlRoomConstants.FileExplorerProgram();

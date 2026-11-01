@@ -7,30 +7,30 @@ public static class MissionDispatch
     public static async Task Execute(Mission mission)
     {
         var missionName = mission.GetType().Name;
-        await OutPipe.AgentLogMessage($"-- MISSION START: {missionName} --");
-        await OutPipe.AgentLogMessage($"-- {mission.MissionVariables} --");
+        await OutPipe.LogMessage($"-- MISSION START: {missionName} --");
+        await OutPipe.LogMessage($"-- {mission.MissionVariables} --");
 
         try
         {
             await mission.Run();
-            await OutPipe.AgentLogMessage("-- MISSION COMPLETE --");
+            await OutPipe.LogMessage("-- MISSION COMPLETE --");
         }
         catch (Exception exception)
         {
-            await OutPipe.AgentLogError("!! MISSION FAILED !!");
+            await OutPipe.LogError("!! MISSION FAILED !!");
 
             if (exception is ArgParseFailedException consoleArgParseFailedException)
             {
-                await OutPipe.AgentLogError($"Failed to parse argument {consoleArgParseFailedException.Argument}");
-                await OutPipe.AgentLogError(consoleArgParseFailedException.Message);
+                await OutPipe.LogError($"Failed to parse argument {consoleArgParseFailedException.Argument}");
+                await OutPipe.LogError(consoleArgParseFailedException.Message);
             }
             else
             {
-                await OutPipe.AgentLogError(exception.ToString());
+                await OutPipe.LogError(exception.ToString());
                 var innerException = exception.InnerException;
                 if (innerException != null)
                 {
-                    await OutPipe.AgentLogError(innerException.ToString());
+                    await OutPipe.LogError(innerException.ToString());
                 }
             }
         }
@@ -44,7 +44,7 @@ public static class MissionDispatch
         }
         catch (Exception exception)
         {
-            await OutPipe.AgentLogError($"Failed to create instance of {type.Name}\n{exception}");
+            await OutPipe.LogError($"Failed to create instance of {type.Name}\n{exception}");
         }
 
         return null;

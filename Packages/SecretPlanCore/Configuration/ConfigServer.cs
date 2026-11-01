@@ -259,7 +259,7 @@ public class ConfigServer
     /// <summary>
     ///     Creates an instance that can be used in-memory or written to disk
     /// </summary>
-    public Config? CreateInstance(Type type, string simpleName, string? path)
+    public Config? CreateInstance(Type type, string simpleName, string? path, bool? shouldCache = true)
     {
         if (Activator.CreateInstance(type) is not Config configInstance)
         {
@@ -274,11 +274,15 @@ public class ConfigServer
 
         configInstance.InstanceInfo = configInstance.InstanceInfo with { Name = fileName };
 
-        CacheInstanceId(configInstance);
+        if (shouldCache == true)
+        {
+            CacheInstanceId(configInstance);
+        }
+
         return configInstance;
     }
 
-    public Config? CreateInstance(string typeId, string simpleName, string? path)
+    public Config? CreateInstance(string typeId, string simpleName, string? path, bool shouldCache = true)
     {
         var type = TypeFromId(typeId);
 
@@ -288,7 +292,7 @@ public class ConfigServer
             return null;
         }
 
-        return CreateInstance(type, simpleName, path);
+        return CreateInstance(type, simpleName, path, shouldCache);
     }
 
     public bool AreSame(Config a, Config b)
@@ -334,7 +338,7 @@ public class ConfigServer
         {
             fileName = $"{directory}/{fileName}";
         }
-        
+
         clone.InstanceInfo = clone.InstanceInfo with
         {
             InstanceId = GenerateInstanceId(), Name = fileName
@@ -382,7 +386,7 @@ public class ConfigServer
         var instanceNames = GetAllInstances().Where(a => a.Origin.IsBaseGameConfig()).Select(a => a.InstanceInfo.Name)
             .ToList();
         instanceNames.Sort();
-        
+
         files.WriteToFile("AllConfigs.txt", instanceNames.ToArray());
     }
 
@@ -421,6 +425,13 @@ public class ConfigServer
             }
 
             enumFileContent.AppendLine(configTypeEnum.GenerateSourceCodeBody());
+
+            var tempInstance = Instance.CreateInstance(typeId, "temp", null, false);
+            var typeLevelCodegen = tempInstance?.CodeGenerateForType();
+            if (typeLevelCodegen != null)
+            {
+                enumFileContent.AppendLine(typeLevelCodegen);
+            }
         }
 
         foreach (var instance in GetAllInstances())
@@ -651,7 +662,7 @@ public class ConfigServer
         }
 
         var newFileName = path + CreateFileName(instanceToRename.GetType(), newSimpleName);
-        
+
         instanceToRename.InstanceInfo = instanceToRename.InstanceInfo with { Name = newFileName };
 
         instanceToRename.Serialize(newFileName).WriteToFile(gameDirectoryFiles);

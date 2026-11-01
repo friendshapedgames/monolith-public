@@ -2,7 +2,7 @@
 
 public class ValueProvider<T>
 {
-    private readonly T _startingValue;
+    private T _startingValue;
     private Func<T>? _providerFunction;
 
     public ValueProvider(T startingValue)
@@ -21,6 +21,11 @@ public class ValueProvider<T>
     public void SetProvider(Func<T> func)
     {
         _providerFunction = func;
+    }
+
+    public void SetStaticValue(T value)
+    {
+        _startingValue = value;
     }
 
     public static implicit operator T(ValueProvider<T> self)

@@ -151,7 +151,7 @@ public class ProgramGit : ExternalProgram
     /// </summary>
     public async Task ResetAndAbort()
     {
-        await OutPipe.AgentLogMessage($"Attempting to put this repo `{WorkingDirectory}` into a clean state");
+        await OutPipe.LogMessage($"Attempting to put this repo `{WorkingDirectory}` into a clean state");
 
         var state = await GetState();
         switch (state)

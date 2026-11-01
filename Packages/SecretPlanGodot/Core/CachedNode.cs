@@ -1,30 +1,39 @@
-﻿using Godot;
+﻿using System.Diagnostics.Contracts;
+using Godot;
 
 namespace SecretPlanGodot.Core;
 
 public class CachedNode<T> where T : Node
 {
-    private readonly NodePath _nodePath;
     private T? _cache;
     private readonly Func<T>? _createFunction;
 
+    public CachedNode(string nodePath, Func<T>? createFunction = null)
+        : this(CachedNodePaths.Get(nodePath), createFunction)
+    {
+    }
+
     public CachedNode(NodePath nodePath, Func<T>? createFunction = null)
     {
-        _nodePath = nodePath;
+        NodePath = nodePath;
         _createFunction = createFunction;
     }
+
+    public NodePath NodePath { get; }
 
     public void ClearCache()
     {
         _cache = null;
     }
 
+    [Pure]
     public T? GetOrNull(Node parentNode)
     {
         ClearCacheIfInvalid();
-        return _cache ?? parentNode.GetNodeOrNull<T>(_nodePath);
+        return _cache ??= parentNode.GetNodeOrNull<T>(NodePath);
     }
 
+    [Pure]
     public T Get(Node parentNode)
     {
         ClearCacheIfInvalid();
@@ -47,16 +56,16 @@ public class CachedNode<T> where T : Node
 
     private T FindNodeConfident(Node parentNode)
     {
-        var maybeNode = parentNode.GetNodeOrNull<T>(_nodePath);
+        var maybeNode = parentNode.GetNodeOrNull<T>(NodePath);
 
         if (maybeNode == null)
         {
-            var typeless = parentNode.GetNodeOrNull(_nodePath);
+            var typeless = parentNode.GetNodeOrNull(NodePath);
 
             if (typeless != null)
             {
                 throw new Exception(
-                    $"WRONG SCRIPT - Child at path {_nodePath} is a {typeless.GetType().Name}, expected {typeof(T).Name}");
+                    $"WRONG SCRIPT - Child at path {NodePath} is a {typeless.GetType().Name}, expected {typeof(T).Name}");
             }
 
             if (_createFunction != null)
@@ -66,7 +75,7 @@ public class CachedNode<T> where T : Node
                 return newNode;
             }
 
-            throw new Exception($"MISSING NODE - Child at path {_nodePath} does not exist");
+            throw new Exception($"MISSING NODE - Child at path {NodePath} does not exist");
         }
 
         return maybeNode;

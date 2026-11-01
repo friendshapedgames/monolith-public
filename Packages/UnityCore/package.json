@@ -1,7 +1,7 @@
 {
     "name": "com.friendshapedgames.core",
     "version": "0.0.1",
-    "displayName": "Secret Plan Core",
+    "displayName": "Friend Shaped Core",
     "unity": "2020.3",
     "dependencies": {
         "com.dbrizov.naughtyattributes": "2.1.4",

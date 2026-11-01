@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+﻿using System.Runtime.Loader;
 using ControlRoom.Missions;
 using ControlRoomLib.Core;
 using ControlRoomLib.Programs;
@@ -19,7 +19,7 @@ if (await ControlRoomConstants.CheckLocalIsLatest())
     if (gameDirectory != null)
     {
         var dataAssemblyName = $"{gameDirectory}Data";
-        await OutPipe.AgentLogMessage($"Building project: {dataAssemblyName}");
+        await OutPipe.LogMessage($"Building project: {dataAssemblyName}");
         var dotnet = new ProgramDotnet();
         await dotnet.BuildProjectAtPath($"./Data/{dataAssemblyName}");
 
@@ -28,8 +28,12 @@ if (await ControlRoomConstants.CheckLocalIsLatest())
             throw new MissionFailedException("Could not build");
         }
 
-        await OutPipe.AgentLogMessage($"Loading assembly: {dataAssemblyName}");
-        Assembly.LoadFrom($"./Data/{dataAssemblyName}/bin/Debug/net8.0/{dataAssemblyName}.dll");
+        await OutPipe.LogMessage($"Loading assembly: {dataAssemblyName}");
+        // Load from memory rather than LoadFrom so the dll isn't file-locked while the REPL is running (otherwise game builds can't overwrite it)
+        var dataAssemblyPath = $"./Data/{dataAssemblyName}/bin/Debug/net8.0/{dataAssemblyName}";
+        using var dllStream = new MemoryStream(File.ReadAllBytes($"{dataAssemblyPath}.dll"));
+        using var pdbStream = File.Exists($"{dataAssemblyPath}.pdb") ? new MemoryStream(File.ReadAllBytes($"{dataAssemblyPath}.pdb")) : null;
+        AssemblyLoadContext.Default.LoadFromStream(dllStream, pdbStream);
     }
 
     if (!remainingArgs.IsValidIndex(0))

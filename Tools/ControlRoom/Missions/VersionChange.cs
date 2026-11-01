@@ -36,12 +36,12 @@ public class VersionChange : Mission
 
         if (command == "create-empty")
         {
-            await OutPipe.AgentLogMessage($"Creating empty {ControlRoomConstants.VersionFile} in {gameDirectoryPath}");
+            await OutPipe.LogMessage($"Creating empty {ControlRoomConstants.VersionFile} in {gameDirectoryPath}");
             WriteVersionFile(gameFiles, new SecretPlanVersion());
             return;
         }
 
-        await OutPipe.AgentLogMessage($"Bumping version for {gameDirectoryPath}");
+        await OutPipe.LogMessage($"Bumping version for {gameDirectoryPath}");
 
         var newVersion = await GetVersionInDirectory(ControlRoomConstants.WorkingDirectoryFiles, gameDirectoryPath);
         var oldVersionNumber = newVersion.Version;
@@ -60,20 +60,20 @@ public class VersionChange : Mission
         }
 
         WriteVersionFile(gameFiles, newVersion);
-        await OutPipe.AgentLogMessage($"Bumped version from: {oldVersionNumber} -> {newVersion.Version}");
+        await OutPipe.LogMessage($"Bumped version from: {oldVersionNumber} -> {newVersion.Version}");
 
         await CommitAndPushIfRequested(new ProgramGit(Environment.CurrentDirectory), gameDirectoryPath, newVersion);
     }
 
     public static async Task CommitAndPushIfRequested(ProgramGit git, string gameDirectoryPath, SecretPlanVersion newVersion)
     {
-        await OutPipe.AgentLogMessage("You must commit and push the bumped version file before you build.");
+        await OutPipe.LogMessage("You must commit and push the bumped version file before you build.");
         var numberOfChangedFiles = await git.CountPendingFiles();
 
         var shouldContinue = true;
         if (numberOfChangedFiles != 1)
         {
-            var response = await OutPipe.AgentPrompt(
+            var response = await OutPipe.Prompt(
                 $"Do you want me to commit and push for you (will push {numberOfChangedFiles} files)?", "no");
             shouldContinue = response != null && response.StartsWith("y");
         }
@@ -116,7 +116,7 @@ public class VersionChange : Mission
 
     public static async Task<SecretPlanVersion> Stamp(RealFileSystem virtualRepoFiles, string gameDirectoryPath)
     {
-        await OutPipe.AgentLogMessage($"Stamping {ControlRoomConstants.VersionFile} with git info");
+        await OutPipe.LogMessage($"Stamping {ControlRoomConstants.VersionFile} with git info");
         var git = new ProgramGit(virtualRepoFiles.GetCurrentDirectory());
         MissionAssert.IsTrue(virtualRepoFiles.HasDirectory(gameDirectoryPath),
             $"Could not find game directory {virtualRepoFiles.ToAbsolutePath(gameDirectoryPath)}");
@@ -133,7 +133,7 @@ public class VersionChange : Mission
     public static async Task<SecretPlanVersion> BumpVersion(RealFileSystem virtualRepoFiles, string gameDirectoryPath,
         VersionBumpType versionBumpType)
     {
-        await OutPipe.AgentLogMessage($"Bumping {ControlRoomConstants.VersionFile}");
+        await OutPipe.LogMessage($"Bumping {ControlRoomConstants.VersionFile}");
         MissionAssert.IsTrue(virtualRepoFiles.HasDirectory(gameDirectoryPath),
             $"Could not find game directory {virtualRepoFiles.ToAbsolutePath(gameDirectoryPath)}");
 

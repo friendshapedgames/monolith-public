@@ -20,7 +20,7 @@ public class PruneBranches : Mission
             bool hasUpstream = await virtualRepo.Git.DoesBranchHaveUpstreamCounterpart(branchName);
             if (!hasUpstream)
             {
-                await OutPipe.AgentLogMessage($"Deleting branch: {branchName}");
+                await OutPipe.LogMessage($"Deleting branch: {branchName}");
                 await virtualRepo.Git.DeleteLocalBranch(branchName);
             }
         }

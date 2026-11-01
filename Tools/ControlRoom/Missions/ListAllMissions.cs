@@ -17,7 +17,7 @@ public class ListAllMissions : Mission
 
         foreach (var mission in allMissions)
         {
-            await OutPipe.AgentLogMessage($" - {mission.Name}");
+            await OutPipe.LogMessage($" - {mission.Name}");
         }
     }
 }

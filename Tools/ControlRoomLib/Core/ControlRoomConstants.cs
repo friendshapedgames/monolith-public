@@ -29,25 +29,45 @@ public static class ControlRoomConstants
     public static readonly RealFileSystem WorkingDirectoryFiles = new(Environment.CurrentDirectory);
     public static readonly IFileSystem LocalUntrackedFiles = WorkingDirectoryFiles.GetDirectory("Local");
 
-    public static SteamBuildInfo FlockAroundFullGame = new(3618030, "flockaround_main",
-    [
-        new SteamDepotInfo(3618031, BuildTarget.Windows),
-        new SteamDepotInfo(3618032, BuildTarget.MacOsUniversal),
-        new SteamDepotInfo(3618033, BuildTarget.Linux)
-    ]);
+    public static SteamBuildInfo FlockAroundFullGame = new(3618030,
+        "FlockAround",
+        "flockaround_main",
+        MergeMainBehavior.AskBeforeMergingMain,
+        [
+            new SteamDepotInfo(3618031, BuildTarget.Windows),
+            new SteamDepotInfo(3618032, BuildTarget.MacOsUniversal),
+            new SteamDepotInfo(3618033, BuildTarget.Linux)
+        ]);
 
-    public static SteamBuildInfo FlockAroundDemo = new(4211680, "flockaround_demo",
-    [
-        new SteamDepotInfo(4211681, BuildTarget.Windows),
-        new SteamDepotInfo(4211682, BuildTarget.MacOsUniversal)
-    ]);
+
+    public static SteamBuildInfo DeskPotatoFullGame = new(5481150, 
+        "DeskPotato",
+        "deskpotato_main",
+        MergeMainBehavior.AlwaysMergeMain,
+        [
+            new SteamDepotInfo(5481151, BuildTarget.Windows),
+            new SteamDepotInfo(5481152, BuildTarget.MacOsUniversal),
+            new SteamDepotInfo(5481153, BuildTarget.Linux)
+        ]);
+
+    public static SteamBuildInfo FlockAroundDemo = new(4211680, 
+        "FlockAround",
+        "flockaround_demo",
+        MergeMainBehavior.NeverMergeMain,
+        [
+            new SteamDepotInfo(4211681, BuildTarget.Windows),
+            new SteamDepotInfo(4211682, BuildTarget.MacOsUniversal)
+        ]);
 
     public static SteamBuildInfo FlockAroundPlaytest =
-        new(4131070, "flockaround_playtest",
-        [
-            new SteamDepotInfo(4131071, BuildTarget.Windows),
-            new SteamDepotInfo(4131072, BuildTarget.MacOsUniversal)
-        ]);
+        new(4131070, 
+            "FlockAround",
+            "flockaround_playtest",
+            MergeMainBehavior.AlwaysMergeMain,
+            [
+                new SteamDepotInfo(4131071, BuildTarget.Windows),
+                new SteamDepotInfo(4131072, BuildTarget.MacOsUniversal)
+            ]);
 
 
     public static string CurrentLogFile
@@ -55,20 +75,35 @@ public static class ControlRoomConstants
         get { return _fileName ??= $"ControlRoom_{DateTime.Now.ToFileTimeUtc()}.txt"; }
     }
 
-    public static SteamBuildInfo GetFlockAroundSteamBuildInfo(SteamAppType desiredBuildType)
+    public static SteamBuildInfo GetGameSteamBuildInfo(string gameDirectory, SteamAppType desiredBuildType)
     {
-        switch (desiredBuildType)
+        if (gameDirectory.Equals("BirdGame", StringComparison.InvariantCultureIgnoreCase))
         {
-            case SteamAppType.Playtest:
-                return FlockAroundPlaytest;
-            case SteamAppType.Demo:
-                return FlockAroundDemo;
-            case SteamAppType.FullGame:
-            case SteamAppType.FullGameWithAdditionalBranch:
-                return FlockAroundFullGame;
-            default:
-                throw new MissionFailedException($"Unable to get build info for {desiredBuildType}");
+            switch (desiredBuildType)
+            {
+                case SteamAppType.Playtest:
+                    return FlockAroundPlaytest;
+                case SteamAppType.Demo:
+                    return FlockAroundDemo;
+                case SteamAppType.FullGame:
+                case SteamAppType.FullGameWithAdditionalBranch:
+                    return FlockAroundFullGame;
+            }
         }
+
+        if (gameDirectory.Equals("IdleGame", StringComparison.InvariantCultureIgnoreCase))
+        {
+            switch (desiredBuildType)
+            {
+                case SteamAppType.Playtest:
+                case SteamAppType.Demo:
+                case SteamAppType.FullGame:
+                case SteamAppType.FullGameWithAdditionalBranch:
+                    return DeskPotatoFullGame;
+            }
+        }
+
+        throw new MissionFailedException($"Unable to get build info for {gameDirectory}::{desiredBuildType}");
     }
 
     public static string GenerateMissionCommand<T>(string? args = null) where T : Mission
@@ -91,7 +126,7 @@ public static class ControlRoomConstants
         }
         catch (Exception)
         {
-            await OutPipe.AgentLogWarning($"Could not deserialize json into {typeof(T).Name}, returning a default");
+            await OutPipe.LogWarning($"Could not deserialize json into {typeof(T).Name}, returning a default");
             return default;
         }
     }
@@ -108,7 +143,12 @@ public static class ControlRoomConstants
 
     public static string ReleaseBranchName(string gameDirectory, SecretPlanVersion releaseVersion)
     {
-        return $"release/{gameDirectory.ToLower()}_{releaseVersion.BuildBranch}_{releaseVersion.SemVerString}";
+        return $"{ReleaseBranchPrefix(gameDirectory)}_{releaseVersion.BuildBranch}_{releaseVersion.SemVerString}";
+    }
+
+    public static string ReleaseBranchPrefix(string gameDirectory)
+    {
+        return $"release/{gameDirectory.ToLower()}";
     }
 
     public static string HumanReadableStringify(object? value)
@@ -197,7 +237,7 @@ public static class ControlRoomConstants
             return true;
         }
 
-        var answer = await OutPipe.AgentPrompt(
+        var answer = await OutPipe.Prompt(
             $"You are {commitsOutOfDate} commit(s) out of date on this branch. Type `continue` to continue, anything else will bail");
         if (!string.IsNullOrWhiteSpace(answer) && answer.StartsWith("continue"))
         {

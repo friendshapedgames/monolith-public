@@ -11,6 +11,7 @@ public abstract class Config
 
     [JsonProperty("config_info")]
     public ConfigInstanceInfo InstanceInfo { get; set; }
+
     /// <summary>
     ///     Runtime property that describes where this config came from originally
     /// </summary>
@@ -39,7 +40,18 @@ public abstract class Config
         return InstanceInfo.InstanceId;
     }
 
+    /// <summary>
+    ///     Codegen that is run once per instance of this config
+    /// </summary>
     public virtual GeneratedEnum<uint>? CodeGenerateEnum()
+    {
+        return null;
+    }
+
+    /// <summary>
+    ///     Codegen that is run once for this class
+    /// </summary>
+    public virtual string? CodeGenerateForType()
     {
         return null;
     }

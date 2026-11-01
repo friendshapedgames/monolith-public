@@ -28,7 +28,7 @@ public class PatchNotes : Mission
         RealFileSystem files,
         ProgramGit git)
     {
-        await OutPipe.AgentLogMessage("Building patch notes... (this might take a while)");
+        await OutPipe.LogMessage("Building patch notes... (this might take a while)");
         git.LogLevel = LogLevel.LogFileOnly;
         var sourceBranchName = buildInfo.BranchToForkFrom;
         var versionToProbe = new SecretPlanVersion
@@ -45,7 +45,7 @@ public class PatchNotes : Mission
                         await ControlRoomConstants.WorkingDirectoryFiles.ReadFileAsync(cacheFilePath)) ??
                     new Cache();
 
-        await OutPipe.AgentLogMessage("Fetching branches");
+        await OutPipe.LogMessage("Fetching branches");
         foreach (var releaseBranch in git.GetAllOriginBranches())
         {
             if (cache.KnownBranches.Contains(releaseBranch.BranchName))
@@ -53,7 +53,7 @@ public class PatchNotes : Mission
                 continue;
             }
 
-            if (!releaseBranch.BranchName.StartsWith("release/") ||
+            if (!releaseBranch.BranchName.StartsWith(ControlRoomConstants.ReleaseBranchPrefix(gameDirectory)) ||
                 !releaseBranch.BranchName.Contains(versionToProbe.BuildBranch))
             {
                 continue;
@@ -76,7 +76,7 @@ public class PatchNotes : Mission
                 throw new MissionFailedException($"Could not decode version of branch {fork.ForkBranch}");
             }
 
-            await OutPipe.AgentLogMessage(
+            await OutPipe.LogMessage(
                 $"{releaseBranch.BranchName} was split from {fork.CommonSha} as {releaseBranchVersion.SemVerString}");
             cache.ShaToVersion[fork.CommonSha] = releaseBranchVersion;
             cache.KnownBranches.Add(releaseBranch.BranchName);
@@ -92,7 +92,7 @@ public class PatchNotes : Mission
             ""
         };
 
-        await OutPipe.AgentLogMessage("Crawling commit history");
+        await OutPipe.LogMessage("Crawling commit history");
         var allCommits = git.FullHistoryOfBranch(sourceBranchName).ToList();
         foreach (var commit in allCommits)
         {
