@@ -1,0 +1,9 @@
+<Project>
+  <!-- Opt in with <UseFriendShapedGenerators>true</UseFriendShapedGenerators> in a project's csproj.
+       Runs the generators at compile time ([Relay], ...) without referencing them at runtime. -->
+  <ItemGroup Condition=" '$(UseFriendShapedGenerators)' == 'true' ">
+    <ProjectReference Include="$(FriendShapedGeneratorsDir)FriendShapedGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>
